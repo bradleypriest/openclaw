@@ -113,6 +113,8 @@ export type AppViewState = {
   skillsReport: SkillStatusReport | null;
   skillsError: string | null;
   skillsFilter: string;
+  skillsFilterStatus: string;
+  skillsFilterSource: string;
   skillEdits: Record<string, string>;
   skillMessages: Record<string, SkillMessage>;
   skillsBusyKey: string | null;

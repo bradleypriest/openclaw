@@ -191,6 +191,8 @@ export class ClawdbotApp extends LitElement {
   @state() skillsReport: SkillStatusReport | null = null;
   @state() skillsError: string | null = null;
   @state() skillsFilter = "";
+  @state() skillsFilterStatus = "all";
+  @state() skillsFilterSource = "all";
   @state() skillEdits: Record<string, string> = {};
   @state() skillsBusyKey: string | null = null;
   @state() skillMessages: Record<string, SkillMessage> = {};

@@ -9,10 +9,14 @@ export type SkillsProps = {
   report: SkillStatusReport | null;
   error: string | null;
   filter: string;
+  statusFilter: string;
+  sourceFilter: string;
   edits: Record<string, string>;
   busyKey: string | null;
   messages: SkillMessageMap;
   onFilterChange: (next: string) => void;
+  onStatusFilterChange: (next: string) => void;
+  onSourceFilterChange: (next: string) => void;
   onRefresh: () => void;
   onToggle: (skillKey: string, enabled: boolean) => void;
   onEdit: (skillKey: string, value: string) => void;
@@ -20,17 +24,50 @@ export type SkillsProps = {
   onInstall: (skillKey: string, name: string, installId: string) => void;
 };
 
+type SkillSourceKind = "workspace" | "managed" | "bundled" | "other";
+
+type SkillStatusKind = "enabled" | "disabled" | "blocked" | "ineligible";
+
+function resolveSkillSourceKind(report: SkillStatusReport | null, skill: SkillStatusEntry): SkillSourceKind {
+  const base = skill.baseDir || "";
+  const workspace = report?.workspaceDir || "";
+  const managed = report?.managedSkillsDir || "";
+
+  if (workspace && base.startsWith(workspace)) return "workspace";
+  if (managed && base.startsWith(managed)) return "managed";
+  if (skill.source) return "bundled";
+  return "other";
+}
+
+function resolveSkillStatusKind(skill: SkillStatusEntry): SkillStatusKind {
+  if (skill.blockedByAllowlist) return "blocked";
+  if (skill.disabled) return "disabled";
+  if (!skill.eligible) return "ineligible";
+  return "enabled";
+}
+
 export function renderSkills(props: SkillsProps) {
   const skills = props.report?.skills ?? [];
   const filter = props.filter.trim().toLowerCase();
-  const filtered = filter
-    ? skills.filter((skill) =>
-        [skill.name, skill.description, skill.source]
-          .join(" ")
-          .toLowerCase()
-          .includes(filter),
-      )
-    : skills;
+
+  const filtered = skills
+    .filter((skill) => {
+      if (!filter) return true;
+      return [skill.name, skill.description, skill.source]
+        .join(" ")
+        .toLowerCase()
+        .includes(filter);
+    })
+    .filter((skill) => {
+      const status = resolveSkillStatusKind(skill);
+      if (props.statusFilter === "all") return true;
+      return status === props.statusFilter;
+    })
+    .filter((skill) => {
+      const source = resolveSkillSourceKind(props.report, skill);
+      if (props.sourceFilter === "all") return true;
+      return source === props.sourceFilter;
+    });
 
   return html`
     <section class="card">
@@ -54,6 +91,37 @@ export function renderSkills(props: SkillsProps) {
             placeholder="Search skills"
           />
         </label>
+
+        <label class="field" style="min-width: 180px;">
+          <span>Status</span>
+          <select
+            .value=${props.statusFilter}
+            @change=${(e: Event) =>
+              props.onStatusFilterChange((e.target as HTMLSelectElement).value)}
+          >
+            <option value="all">all</option>
+            <option value="enabled">enabled</option>
+            <option value="disabled">disabled</option>
+            <option value="blocked">blocked</option>
+            <option value="ineligible">needs setup</option>
+          </select>
+        </label>
+
+        <label class="field" style="min-width: 200px;">
+          <span>Source</span>
+          <select
+            .value=${props.sourceFilter}
+            @change=${(e: Event) =>
+              props.onSourceFilterChange((e.target as HTMLSelectElement).value)}
+          >
+            <option value="all">all</option>
+            <option value="workspace">workspace</option>
+            <option value="managed">clawdhub</option>
+            <option value="bundled">built-in</option>
+            <option value="other">other</option>
+          </select>
+        </label>
+
         <div class="muted">${filtered.length} shown</div>
       </div>
 
