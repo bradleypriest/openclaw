@@ -40,8 +40,15 @@ function resolveSkillSourceKind(
   // Guard against misconfigured/empty roots (e.g. workspaceDir="/") which would match everything.
   const isValidRoot = (p: string) => Boolean(p) && p !== "/";
 
-  if (isValidRoot(workspace) && base.startsWith(workspace)) return "workspace";
-  if (isValidRoot(managed) && base.startsWith(managed)) return "managed";
+  // Path-aware prefix match (prevents false matches like "/home/.../clawd" matching "/home/.../clawdbot").
+  const startsWithPath = (full: string, root: string) => {
+    const r = root.replace(/\/+$/g, "");
+    if (!r) return false;
+    return full === r || full.startsWith(r + "/");
+  };
+
+  if (isValidRoot(workspace) && startsWithPath(base, workspace)) return "workspace";
+  if (isValidRoot(managed) && startsWithPath(base, managed)) return "managed";
 
   // Bundled/built-in skills typically have a source string like "clawdbot-bundled".
   if (source.includes("bundled")) return "bundled";
