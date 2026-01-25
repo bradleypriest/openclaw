@@ -5,6 +5,8 @@ import {
   extractTextCached,
   extractThinking,
   extractThinkingCached,
+  extractImages,
+  extractImagesCached,
 } from "./message-extract";
 
 describe("extractTextCached", () => {
@@ -42,5 +44,43 @@ describe("extractThinkingCached", () => {
     };
     expect(extractThinkingCached(message)).toBe("Plan A");
     expect(extractThinkingCached(message)).toBe("Plan A");
+  });
+});
+
+describe("extractImagesCached", () => {
+  it("extracts image data URLs from image blocks", () => {
+    const message = {
+      role: "user",
+      content: [
+        {
+          type: "image",
+          data: "abc=",
+          mimeType: "image/png",
+          fileName: "dot.png",
+        },
+      ],
+    };
+    const expected = extractImages(message);
+    expect(extractImagesCached(message)).toEqual(expected);
+    expect(expected[0]?.src).toBe("data:image/png;base64,abc=");
+  });
+
+  it("extracts input_image base64 source", () => {
+    const message = {
+      role: "user",
+      content: [
+        {
+          type: "input_image",
+          source: {
+            type: "base64",
+            data: "Zm9v",
+            media_type: "image/jpeg",
+          },
+        },
+      ],
+    };
+    const images = extractImagesCached(message);
+    expect(images).toHaveLength(1);
+    expect(images[0]?.src).toBe("data:image/jpeg;base64,Zm9v");
   });
 });

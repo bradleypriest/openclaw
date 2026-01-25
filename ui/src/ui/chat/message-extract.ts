@@ -18,6 +18,7 @@ const ENVELOPE_CHANNELS = [
 
 const textCache = new WeakMap<object, string | null>();
 const thinkingCache = new WeakMap<object, string | null>();
+const imagesCache = new WeakMap<object, ExtractedImage[]>();
 
 function looksLikeEnvelopeHeader(header: string): boolean {
   if (/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}Z\b/.test(header)) return true;
@@ -31,6 +32,126 @@ export function stripEnvelope(text: string): string {
   const header = match[1] ?? "";
   if (!looksLikeEnvelopeHeader(header)) return text;
   return text.slice(match[0].length);
+}
+
+export type ExtractedImage = {
+  src: string;
+  mimeType?: string;
+  alt?: string;
+};
+
+function pickFirstString(...values: Array<unknown>): string | undefined {
+  for (const value of values) {
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      if (trimmed) return trimmed;
+    }
+  }
+  return undefined;
+}
+
+function normalizeMimeType(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  const cleaned = trimmed.split(";")[0]?.trim().toLowerCase();
+  return cleaned || undefined;
+}
+
+function isAllowedImageSrc(value: string): boolean {
+  return (
+    /^https?:\/\//i.test(value) ||
+    /^data:image\//i.test(value) ||
+    /^\/media\//.test(value) ||
+    /^blob:/i.test(value)
+  );
+}
+
+function resolveDataImageSrc(data: string, mimeType?: string): string | null {
+  const trimmed = data.trim();
+  if (!trimmed) return null;
+  if (/^data:/i.test(trimmed)) {
+    return /^data:image\//i.test(trimmed) ? trimmed : null;
+  }
+  if (!mimeType || !mimeType.startsWith("image/")) return null;
+  return `data:${mimeType};base64,${trimmed}`;
+}
+
+function resolveUrlImageSrc(url?: string): string | null {
+  if (!url) return null;
+  const trimmed = url.trim();
+  if (!trimmed) return null;
+  return isAllowedImageSrc(trimmed) ? trimmed : null;
+}
+
+function resolveImageFromSource(source: Record<string, unknown>): {
+  src: string | null;
+  mimeType?: string;
+} {
+  const sourceType = pickFirstString(source.type)?.toLowerCase();
+  const sourceMime = normalizeMimeType(
+    pickFirstString(source.media_type, source.mediaType, source.mimeType, source.mime_type),
+  );
+  if (sourceType === "base64") {
+    const data = pickFirstString(source.data);
+    return {
+      src: data ? resolveDataImageSrc(data, sourceMime ?? undefined) : null,
+      mimeType: sourceMime,
+    };
+  }
+  if (sourceType === "url") {
+    const url = pickFirstString(source.url);
+    return { src: resolveUrlImageSrc(url), mimeType: sourceMime };
+  }
+
+  const data = pickFirstString(source.data);
+  if (data) {
+    return {
+      src: resolveDataImageSrc(data, sourceMime ?? undefined),
+      mimeType: sourceMime,
+    };
+  }
+  const url = pickFirstString(source.url);
+  return { src: resolveUrlImageSrc(url), mimeType: sourceMime };
+}
+
+function extractImageFromItem(item: Record<string, unknown>): ExtractedImage | null {
+  const type = typeof item.type === "string" ? item.type.toLowerCase() : "";
+  if (type !== "image" && type !== "input_image" && type !== "image_url") return null;
+
+  const alt = pickFirstString(item.alt, item.title, item.fileName, item.filename, item.name);
+  let mimeType = normalizeMimeType(
+    pickFirstString(item.mimeType, item.media_type, item.mime_type, item.mediaType),
+  );
+
+  if (item.source && typeof item.source === "object") {
+    const source = item.source as Record<string, unknown>;
+    const resolved = resolveImageFromSource(source);
+    if (resolved.mimeType) mimeType = resolved.mimeType;
+    if (resolved.src) {
+      return { src: resolved.src, mimeType, alt };
+    }
+  }
+
+  const imageUrlObject =
+    item.image_url && typeof item.image_url === "object"
+      ? (item.image_url as Record<string, unknown>)
+      : null;
+  const imageUrl = pickFirstString(
+    item.url,
+    item.imageUrl,
+    item.imageURL,
+    typeof item.image_url === "string" ? item.image_url : undefined,
+    imageUrlObject?.url,
+  );
+  const urlSrc = resolveUrlImageSrc(imageUrl);
+  if (urlSrc) return { src: urlSrc, mimeType, alt };
+
+  const data = pickFirstString(item.data, item.content, imageUrlObject?.data);
+  const dataSrc = data ? resolveDataImageSrc(data, mimeType ?? undefined) : null;
+  if (dataSrc) return { src: dataSrc, mimeType, alt };
+
+  return null;
 }
 
 export function extractText(message: unknown): string | null {
@@ -106,6 +227,29 @@ export function extractThinkingCached(message: unknown): string | null {
   if (thinkingCache.has(obj)) return thinkingCache.get(obj) ?? null;
   const value = extractThinking(message);
   thinkingCache.set(obj, value);
+  return value;
+}
+
+export function extractImages(message: unknown): ExtractedImage[] {
+  const m = message as Record<string, unknown>;
+  const content = m.content;
+  if (!Array.isArray(content)) return [];
+  const images: ExtractedImage[] = [];
+  for (const entry of content) {
+    if (!entry || typeof entry !== "object") continue;
+    const item = extractImageFromItem(entry as Record<string, unknown>);
+    if (item) images.push(item);
+  }
+  return images;
+}
+
+export function extractImagesCached(message: unknown): ExtractedImage[] {
+  if (!message || typeof message !== "object") return extractImages(message);
+  const obj = message as object;
+  const cached = imagesCache.get(obj);
+  if (cached) return cached;
+  const value = extractImages(message);
+  imagesCache.set(obj, value);
   return value;
 }
 

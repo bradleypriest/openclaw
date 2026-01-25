@@ -214,6 +214,30 @@ img.chat-avatar {
   animation: fade-in 200ms ease-out;
 }
 
+/* Image attachments in chat bubbles */
+.chat-media {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 4px 0;
+}
+
+.chat-media__image {
+  display: block;
+  max-width: min(520px, 70vw);
+  max-height: 360px;
+  width: auto;
+  height: auto;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.18);
+  object-fit: contain;
+}
+
+.chat-media + .chat-text {
+  margin-top: 8px;
+}
+
 @keyframes fade-in {
   from {
     opacity: 0;

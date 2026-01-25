@@ -10,6 +10,7 @@ import {
   extractTextCached,
   extractThinkingCached,
   formatReasoningMarkdown,
+  extractImagesCached,
 } from "./message-extract";
 import { extractToolCards, renderToolCardSidebar } from "./tool-cards";
 
@@ -181,6 +182,7 @@ function renderGroupedMessage(
   const hasToolCards = toolCards.length > 0;
 
   const extractedText = extractTextCached(message);
+  const extractedImages = extractImagesCached(message);
   const extractedThinking =
     opts.showReasoning && role === "assistant"
       ? extractThinkingCached(message)
@@ -191,6 +193,7 @@ function renderGroupedMessage(
     : null;
   const markdown = markdownBase;
   const canCopyMarkdown = role === "assistant" && Boolean(markdown?.trim());
+  const hasImages = extractedImages.length > 0;
 
   const bubbleClasses = [
     "chat-bubble",
@@ -201,13 +204,13 @@ function renderGroupedMessage(
     .filter(Boolean)
     .join(" ");
 
-  if (!markdown && hasToolCards && isToolResult) {
+  if (!markdown && !hasImages && hasToolCards && isToolResult) {
     return html`${toolCards.map((card) =>
       renderToolCardSidebar(card, onOpenSidebar),
     )}`;
   }
 
-  if (!markdown && !hasToolCards) return nothing;
+  if (!markdown && !hasToolCards && !hasImages) return nothing;
 
   return html`
     <div class="${bubbleClasses}">
@@ -216,6 +219,20 @@ function renderGroupedMessage(
         ? html`<div class="chat-thinking">${unsafeHTML(
             toSanitizedMarkdownHtml(reasoningMarkdown),
           )}</div>`
+        : nothing}
+      ${hasImages
+        ? html`<div class="chat-media">
+            ${extractedImages.map(
+              (img) => html`<img
+                class="chat-media__image"
+                src="${img.src}"
+                alt="${img.alt ?? "image"}"
+                title=${img.alt ?? ""}
+                loading="lazy"
+                decoding="async"
+              />`,
+            )}
+          </div>`
         : nothing}
       ${markdown
         ? html`<div class="chat-text">${unsafeHTML(toSanitizedMarkdownHtml(markdown))}</div>`

@@ -20,10 +20,20 @@ export type MessageGroup = {
 
 /** Content item types in a normalized message */
 export type MessageContentItem = {
-  type: "text" | "tool_call" | "tool_result";
+  type: "text" | "tool_call" | "tool_result" | "image" | "input_image" | "image_url";
   text?: string;
   name?: string;
   args?: unknown;
+  url?: string;
+  data?: string;
+  mimeType?: string;
+  source?: {
+    type?: string;
+    url?: string;
+    data?: string;
+    media_type?: string;
+    mediaType?: string;
+  };
 };
 
 /** Normalized message structure for rendering */
