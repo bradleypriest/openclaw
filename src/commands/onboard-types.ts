@@ -2,7 +2,7 @@ import type { ChannelId } from "../channels/plugins/types.js";
 import type { GatewayDaemonRuntime } from "./daemon-runtime.js";
 
 export type OnboardMode = "local" | "remote";
-export type AuthChoice =
+export type BuiltInAuthChoice =
   // Legacy alias for `setup-token` (kept for backwards CLI compatibility).
   | "oauth"
   | "setup-token"
@@ -38,6 +38,8 @@ export type AuthChoice =
   | "xai-api-key"
   | "qianfan-api-key"
   | "skip";
+
+export type AuthChoice = BuiltInAuthChoice | `plugin-auth:${string}`;
 export type GatewayAuthChoice = "token" | "password";
 export type ResetScope = "config" | "config+creds+sessions" | "full";
 export type GatewayBind = "loopback" | "lan" | "auto" | "custom" | "tailnet";
@@ -57,6 +59,8 @@ export type OnboardOptions = {
   acceptRisk?: boolean;
   reset?: boolean;
   authChoice?: AuthChoice;
+  /** Install an npm provider plugin before auth selection (non-interactive). */
+  installProvider?: string;
   /** Used when `authChoice=token` in non-interactive mode. */
   tokenProvider?: string;
   /** Used when `authChoice=token` in non-interactive mode. */

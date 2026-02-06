@@ -2,7 +2,20 @@ import type { Api, Model } from "@mariozechner/pi-ai";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+const findDeclarativeProviderAuthByProvider = vi.hoisted(() =>
+  vi.fn<(provider: string) => { envVars?: string[] } | undefined>(() => undefined),
+);
+
+vi.mock("../plugins/provider-auth-manifest.js", () => ({
+  findDeclarativeProviderAuthByProvider,
+}));
+
+afterEach(() => {
+  findDeclarativeProviderAuthByProvider.mockReset();
+  findDeclarativeProviderAuthByProvider.mockReturnValue(undefined);
+});
 
 const oauthFixture = {
   access: "access-token",
@@ -301,6 +314,34 @@ describe("getApiKeyForModel", () => {
         delete process.env.AI_GATEWAY_API_KEY;
       } else {
         process.env.AI_GATEWAY_API_KEY = previousGatewayKey;
+      }
+    }
+  });
+
+  it("resolves plugin declarative API key env vars", async () => {
+    const previousXai = process.env.XAI_API_KEY;
+
+    try {
+      process.env.XAI_API_KEY = "xai-test-key";
+      findDeclarativeProviderAuthByProvider.mockImplementation((provider: string) =>
+        provider === "xai" ? { envVars: ["XAI_API_KEY"] } : undefined,
+      );
+
+      vi.resetModules();
+      const { resolveApiKeyForProvider } = await import("./model-auth.js");
+
+      const resolved = await resolveApiKeyForProvider({
+        provider: "xai",
+        store: { version: 1, profiles: {} },
+      });
+
+      expect(resolved.apiKey).toBe("xai-test-key");
+      expect(resolved.source).toContain("XAI_API_KEY");
+    } finally {
+      if (previousXai === undefined) {
+        delete process.env.XAI_API_KEY;
+      } else {
+        process.env.XAI_API_KEY = previousXai;
       }
     }
   });

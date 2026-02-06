@@ -1,4 +1,5 @@
 import type { AuthChoice } from "./onboard-types.js";
+import { findDeclarativeProviderAuthByChoice } from "../plugins/provider-auth-manifest.js";
 
 const PREFERRED_PROVIDER_BY_AUTH_CHOICE: Partial<Record<AuthChoice, string>> = {
   oauth: "anthropic",
@@ -37,5 +38,10 @@ const PREFERRED_PROVIDER_BY_AUTH_CHOICE: Partial<Record<AuthChoice, string>> = {
 };
 
 export function resolvePreferredProviderForAuthChoice(choice: AuthChoice): string | undefined {
-  return PREFERRED_PROVIDER_BY_AUTH_CHOICE[choice];
+  const preferred = PREFERRED_PROVIDER_BY_AUTH_CHOICE[choice];
+  if (preferred) {
+    return preferred;
+  }
+
+  return findDeclarativeProviderAuthByChoice(choice)?.providerId;
 }

@@ -4,6 +4,7 @@ import type { OpenClawConfig } from "../config/config.js";
 import type { ModelProviderAuthMode, ModelProviderConfig } from "../config/types.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import { getShellEnvAppliedKeys } from "../infra/shell-env.js";
+import { findDeclarativeProviderAuthByProvider } from "../plugins/provider-auth-manifest.js";
 import {
   type AuthProfileStore,
   ensureAuthProfileStore,
@@ -306,10 +307,21 @@ export function resolveEnvApiKey(provider: string): EnvApiKeyResult | null {
     ollama: "OLLAMA_API_KEY",
   };
   const envVar = envMap[normalized];
-  if (!envVar) {
-    return null;
+  if (envVar) {
+    return pick(envVar);
   }
-  return pick(envVar);
+
+  const declarative = findDeclarativeProviderAuthByProvider(normalized);
+  if (declarative?.envVars && declarative.envVars.length > 0) {
+    for (const pluginEnvVar of declarative.envVars) {
+      const resolved = pick(pluginEnvVar);
+      if (resolved) {
+        return resolved;
+      }
+    }
+  }
+
+  return null;
 }
 
 export function resolveModelAuthMode(
