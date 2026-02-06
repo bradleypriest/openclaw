@@ -59,11 +59,15 @@ export type OnboardOptions = {
   acceptRisk?: boolean;
   reset?: boolean;
   authChoice?: AuthChoice;
+  /** Provider shortcut: <provider-id> or <npm-package>:<provider-id>. */
+  provider?: string;
+  /** API key shortcut for --provider in non-interactive mode. */
+  apiKey?: string;
   /** Install an npm provider plugin before auth selection (non-interactive). */
   installProvider?: string;
-  /** Used when `authChoice=token` in non-interactive mode. */
+  /** Used with `authChoice=token`; also used to target API-key provider selection. */
   tokenProvider?: string;
-  /** Used when `authChoice=token` in non-interactive mode. */
+  /** Used when `authChoice=token`; also used as API key for generic provider auth. */
   token?: string;
   /** Used when `authChoice=token` in non-interactive mode. */
   tokenProfileId?: string;
