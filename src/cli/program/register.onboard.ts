@@ -64,6 +64,10 @@ export function registerOnboardCommand(program: Command) {
       "--token-provider <id>",
       "Token provider id (non-interactive; used with --auth-choice token)",
     )
+    .option(
+      "--install-provider <npm-package>",
+      "Install an npm provider plugin before non-interactive auth",
+    )
     .option("--token <token>", "Token value (non-interactive; used with --auth-choice token)")
     .option(
       "--token-profile-id <id>",
@@ -122,6 +126,7 @@ export function registerOnboardCommand(program: Command) {
             flow: opts.flow as "quickstart" | "advanced" | "manual" | undefined,
             mode: opts.mode as "local" | "remote" | undefined,
             authChoice: opts.authChoice as AuthChoice | undefined,
+            installProvider: opts.installProvider as string | undefined,
             tokenProvider: opts.tokenProvider as string | undefined,
             token: opts.token as string | undefined,
             tokenProfileId: opts.tokenProfileId as string | undefined,

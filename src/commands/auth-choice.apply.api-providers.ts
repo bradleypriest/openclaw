@@ -1,6 +1,17 @@
+import type { OpenClawConfig } from "../config/config.js";
 import type { ApplyAuthChoiceParams, ApplyAuthChoiceResult } from "./auth-choice.apply.js";
-import { ensureAuthProfileStore, resolveAuthProfileOrder } from "../agents/auth-profiles.js";
+import {
+  ensureAuthProfileStore,
+  resolveAuthProfileOrder,
+  upsertAuthProfile,
+} from "../agents/auth-profiles.js";
 import { resolveEnvApiKey } from "../agents/model-auth.js";
+import { normalizeProviderId } from "../agents/model-selection.js";
+import { enablePluginInConfig } from "../plugins/enable.js";
+import {
+  findDeclarativeProviderAuthByChoice,
+  findDeclarativeProviderAuthByTokenProvider,
+} from "../plugins/provider-auth-manifest.js";
 import {
   formatApiKeyPreview,
   normalizeApiKeyInput,
@@ -61,6 +72,46 @@ import {
 } from "./onboard-auth.js";
 import { OPENCODE_ZEN_DEFAULT_MODEL } from "./opencode-zen-model-default.js";
 
+function applyProviderModelConfig(cfg: OpenClawConfig, modelRef: string): OpenClawConfig {
+  const models = { ...cfg.agents?.defaults?.models };
+  models[modelRef] = {
+    ...models[modelRef],
+  };
+
+  return {
+    ...cfg,
+    agents: {
+      ...cfg.agents,
+      defaults: {
+        ...cfg.agents?.defaults,
+        models,
+      },
+    },
+  };
+}
+
+function applyDefaultModelConfig(cfg: OpenClawConfig, modelRef: string): OpenClawConfig {
+  const next = applyProviderModelConfig(cfg, modelRef);
+  const existingModel = next.agents?.defaults?.model;
+  return {
+    ...next,
+    agents: {
+      ...next.agents,
+      defaults: {
+        ...next.agents?.defaults,
+        model: {
+          ...(existingModel && "fallbacks" in (existingModel as Record<string, unknown>)
+            ? {
+                fallbacks: (existingModel as { fallbacks?: string[] }).fallbacks,
+              }
+            : undefined),
+          primary: modelRef,
+        },
+      },
+    },
+  };
+}
+
 export async function applyAuthChoiceApiProviders(
   params: ApplyAuthChoiceParams,
 ): Promise<ApplyAuthChoiceResult | null> {
@@ -80,37 +131,117 @@ export async function applyAuthChoiceApiProviders(
   if (
     authChoice === "apiKey" &&
     params.opts?.tokenProvider &&
-    params.opts.tokenProvider !== "anthropic" &&
-    params.opts.tokenProvider !== "openai"
+    normalizeProviderId(params.opts.tokenProvider) !== "anthropic" &&
+    normalizeProviderId(params.opts.tokenProvider) !== "openai"
   ) {
-    if (params.opts.tokenProvider === "openrouter") {
+    const tokenProvider = normalizeProviderId(params.opts.tokenProvider);
+    if (tokenProvider === "openrouter") {
       authChoice = "openrouter-api-key";
-    } else if (params.opts.tokenProvider === "vercel-ai-gateway") {
+    } else if (tokenProvider === "vercel-ai-gateway") {
       authChoice = "ai-gateway-api-key";
-    } else if (params.opts.tokenProvider === "cloudflare-ai-gateway") {
+    } else if (tokenProvider === "cloudflare-ai-gateway") {
       authChoice = "cloudflare-ai-gateway-api-key";
-    } else if (params.opts.tokenProvider === "moonshot") {
+    } else if (tokenProvider === "moonshot") {
       authChoice = "moonshot-api-key";
-    } else if (
-      params.opts.tokenProvider === "kimi-code" ||
-      params.opts.tokenProvider === "kimi-coding"
-    ) {
+    } else if (tokenProvider === "kimi-code" || tokenProvider === "kimi-coding") {
       authChoice = "kimi-code-api-key";
-    } else if (params.opts.tokenProvider === "google") {
+    } else if (tokenProvider === "google") {
       authChoice = "gemini-api-key";
-    } else if (params.opts.tokenProvider === "zai") {
+    } else if (tokenProvider === "zai") {
       authChoice = "zai-api-key";
-    } else if (params.opts.tokenProvider === "xiaomi") {
+    } else if (tokenProvider === "xiaomi") {
       authChoice = "xiaomi-api-key";
-    } else if (params.opts.tokenProvider === "synthetic") {
+    } else if (tokenProvider === "synthetic") {
       authChoice = "synthetic-api-key";
-    } else if (params.opts.tokenProvider === "venice") {
+    } else if (tokenProvider === "venice") {
       authChoice = "venice-api-key";
-    } else if (params.opts.tokenProvider === "opencode") {
+    } else if (tokenProvider === "opencode") {
       authChoice = "opencode-zen";
-    } else if (params.opts.tokenProvider === "qianfan") {
+    } else if (tokenProvider === "qianfan") {
       authChoice = "qianfan-api-key";
+    } else {
+      const declarative = findDeclarativeProviderAuthByTokenProvider(tokenProvider, {
+        config: nextConfig,
+      });
+      if (declarative) {
+        authChoice = declarative.authChoice as typeof authChoice;
+      }
     }
+  }
+
+  const declarative = findDeclarativeProviderAuthByChoice(authChoice, {
+    config: nextConfig,
+  });
+  if (declarative?.method === "api-key") {
+    const enableResult = enablePluginInConfig(nextConfig, declarative.pluginId);
+    nextConfig = enableResult.config;
+    if (!enableResult.enabled) {
+      await params.prompter.note(
+        `${declarative.label} plugin is disabled (${enableResult.reason ?? "blocked"}).`,
+        declarative.label,
+      );
+      return { config: nextConfig, agentModelOverride };
+    }
+
+    const tokenProvider = normalizeProviderId(params.opts?.tokenProvider ?? "");
+    const token = params.opts?.token;
+    let resolvedKey: string | undefined;
+    if (token && tokenProvider && tokenProvider === normalizeProviderId(declarative.providerId)) {
+      resolvedKey = normalizeApiKeyInput(token);
+    } else {
+      const envKey = resolveEnvApiKey(declarative.providerId);
+      if (envKey) {
+        const useExisting = await params.prompter.confirm({
+          message: `Use existing API key for ${declarative.label} (${envKey.source}, ${formatApiKeyPreview(envKey.apiKey)})?`,
+          initialValue: true,
+        });
+        if (useExisting) {
+          resolvedKey = normalizeApiKeyInput(envKey.apiKey);
+        }
+      }
+    }
+
+    if (!resolvedKey) {
+      const key = await params.prompter.text({
+        message: declarative.keyPrompt,
+        validate: validateApiKeyInput,
+      });
+      resolvedKey = normalizeApiKeyInput(String(key));
+    }
+
+    upsertAuthProfile({
+      profileId: declarative.profileId,
+      credential: {
+        type: "api_key",
+        provider: declarative.providerId,
+        key: resolvedKey,
+      },
+      agentDir: params.agentDir,
+    });
+
+    nextConfig = applyAuthProfileConfig(nextConfig, {
+      profileId: declarative.profileId,
+      provider: declarative.providerId,
+      mode: "api_key",
+    });
+
+    if (declarative.defaultModel) {
+      const defaultModel = declarative.defaultModel;
+      const applied = await applyDefaultModelChoice({
+        config: nextConfig,
+        setDefaultModel: params.setDefaultModel,
+        defaultModel,
+        applyDefaultConfig: (cfg) => applyDefaultModelConfig(cfg, defaultModel),
+        applyProviderConfig: (cfg) => applyProviderModelConfig(cfg, defaultModel),
+        noteDefault: defaultModel,
+        noteAgentModel,
+        prompter: params.prompter,
+      });
+      nextConfig = applied.config;
+      agentModelOverride = applied.agentModelOverride ?? agentModelOverride;
+    }
+
+    return { config: nextConfig, agentModelOverride };
   }
 
   if (authChoice === "openrouter-api-key") {
