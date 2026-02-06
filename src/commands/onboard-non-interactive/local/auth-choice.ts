@@ -5,6 +5,11 @@ import { upsertAuthProfile } from "../../../agents/auth-profiles.js";
 import { normalizeProviderId } from "../../../agents/model-selection.js";
 import { parseDurationMs } from "../../../cli/parse-duration.js";
 import { upsertSharedEnvVar } from "../../../infra/env-file.js";
+import { enablePluginInConfig } from "../../../plugins/enable.js";
+import {
+  findDeclarativeProviderAuthByChoice,
+  findDeclarativeProviderAuthByTokenProvider,
+} from "../../../plugins/provider-auth-manifest.js";
 import { shortenHomePath } from "../../../utils.js";
 import { buildTokenProfileId, validateAnthropicSetupToken } from "../../auth-token.js";
 import { applyGoogleGeminiModelDefault } from "../../google-gemini-model-default.js";
@@ -42,6 +47,103 @@ import {
 import { applyOpenAIConfig } from "../../openai-model-default.js";
 import { resolveNonInteractiveApiKey } from "../api-keys.js";
 
+function applyProviderModelConfig(cfg: OpenClawConfig, modelRef: string): OpenClawConfig {
+  const models = { ...cfg.agents?.defaults?.models };
+  models[modelRef] = {
+    ...models[modelRef],
+  };
+
+  return {
+    ...cfg,
+    agents: {
+      ...cfg.agents,
+      defaults: {
+        ...cfg.agents?.defaults,
+        models,
+      },
+    },
+  };
+}
+
+function applyDefaultModelConfig(cfg: OpenClawConfig, modelRef: string): OpenClawConfig {
+  const next = applyProviderModelConfig(cfg, modelRef);
+  const existingModel = next.agents?.defaults?.model;
+  return {
+    ...next,
+    agents: {
+      ...next.agents,
+      defaults: {
+        ...next.agents?.defaults,
+        model: {
+          ...(existingModel && "fallbacks" in (existingModel as Record<string, unknown>)
+            ? {
+                fallbacks: (existingModel as { fallbacks?: string[] }).fallbacks,
+              }
+            : undefined),
+          primary: modelRef,
+        },
+      },
+    },
+  };
+}
+
+async function applyDeclarativeNonInteractiveApiKeyAuth(params: {
+  nextConfig: OpenClawConfig;
+  baseConfig: OpenClawConfig;
+  runtime: RuntimeEnv;
+  token?: string;
+  pluginId: string;
+  providerId: string;
+  profileId: string;
+  defaultModel?: string;
+  envVars: string[];
+}): Promise<OpenClawConfig | null> {
+  const enableResult = enablePluginInConfig(params.nextConfig, params.pluginId);
+  if (!enableResult.enabled) {
+    params.runtime.error(
+      `Provider plugin "${params.pluginId}" is disabled (${enableResult.reason ?? "blocked"}).`,
+    );
+    params.runtime.exit(1);
+    return null;
+  }
+
+  const envVarLabel = params.envVars.join(" or ") || `${params.providerId.toUpperCase()}_API_KEY`;
+  const resolved = await resolveNonInteractiveApiKey({
+    provider: params.providerId,
+    cfg: params.baseConfig,
+    flagValue: params.token,
+    flagName: "--token",
+    envVar: envVarLabel,
+    runtime: params.runtime,
+  });
+  if (!resolved) {
+    return null;
+  }
+
+  if (resolved.source !== "profile") {
+    upsertAuthProfile({
+      profileId: params.profileId,
+      credential: {
+        type: "api_key",
+        provider: params.providerId,
+        key: resolved.key,
+      },
+    });
+  }
+
+  let nextConfig = applyAuthProfileConfig(enableResult.config, {
+    profileId: params.profileId,
+    provider: params.providerId,
+    mode: "api_key",
+  });
+
+  if (params.defaultModel) {
+    nextConfig = applyDefaultModelConfig(nextConfig, params.defaultModel);
+  }
+
+  return nextConfig;
+}
+
 export async function applyNonInteractiveAuthChoice(params: {
   nextConfig: OpenClawConfig;
   authChoice: AuthChoice;
@@ -75,6 +177,26 @@ export async function applyNonInteractiveAuthChoice(params: {
   }
 
   if (authChoice === "apiKey") {
+    const tokenProvider = opts.tokenProvider?.trim();
+    const declarative = tokenProvider
+      ? findDeclarativeProviderAuthByTokenProvider(tokenProvider, {
+          config: baseConfig,
+        })
+      : undefined;
+    if (declarative?.method === "api-key") {
+      return applyDeclarativeNonInteractiveApiKeyAuth({
+        nextConfig,
+        baseConfig,
+        runtime,
+        token: opts.token,
+        pluginId: declarative.pluginId,
+        providerId: declarative.providerId,
+        profileId: declarative.profileId,
+        defaultModel: declarative.defaultModel,
+        envVars: declarative.envVars,
+      });
+    }
+
     const resolved = await resolveNonInteractiveApiKey({
       provider: "anthropic",
       cfg: baseConfig,
@@ -516,6 +638,23 @@ export async function applyNonInteractiveAuthChoice(params: {
       mode: "api_key",
     });
     return applyOpencodeZenConfig(nextConfig);
+  }
+
+  const declarativeChoice = findDeclarativeProviderAuthByChoice(authChoice, {
+    config: baseConfig,
+  });
+  if (declarativeChoice?.method === "api-key") {
+    return applyDeclarativeNonInteractiveApiKeyAuth({
+      nextConfig,
+      baseConfig,
+      runtime,
+      token: opts.token,
+      pluginId: declarativeChoice.pluginId,
+      providerId: declarativeChoice.providerId,
+      profileId: declarativeChoice.profileId,
+      defaultModel: declarativeChoice.defaultModel,
+      envVars: declarativeChoice.envVars,
+    });
   }
 
   if (
