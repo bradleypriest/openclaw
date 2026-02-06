@@ -1,6 +1,6 @@
 import type { OpenClawConfig } from "../../config/config.js";
 import type { RuntimeEnv } from "../../runtime.js";
-import type { OnboardOptions } from "../onboard-types.js";
+import type { AuthChoice, OnboardOptions } from "../onboard-types.js";
 import { formatCliCommand } from "../../cli/command-format.js";
 import { resolveGatewayPort, writeConfigFile } from "../../config/config.js";
 import { logConfigUpdated } from "../../config/logging.js";
@@ -13,6 +13,10 @@ import {
   resolveControlUiLinks,
   waitForGatewayReachable,
 } from "../onboard-helpers.js";
+import {
+  installCommunityProviderFromNpm,
+  resolveInstalledCommunityProviderAuthChoice,
+} from "../onboarding/provider-install.js";
 import { inferAuthChoiceFromFlags } from "./local/auth-choice-inference.js";
 import { applyNonInteractiveAuthChoice } from "./local/auth-choice.js";
 import { installGatewayDaemonNonInteractive } from "./local/daemon-install.js";
@@ -50,8 +54,53 @@ export async function runNonInteractiveOnboardingLocal(params: {
     },
   };
 
+  let installedProviderAuthChoice: AuthChoice | undefined;
+  const installProviderSpec = opts.installProvider?.trim();
+  if (installProviderSpec) {
+    runtime.log(`Installing community provider: ${installProviderSpec}`);
+    const installResult = await installCommunityProviderFromNpm({
+      npmSpec: installProviderSpec,
+      config: nextConfig,
+      workspaceDir,
+      logger: {
+        info: (message) => runtime.log(message),
+        warn: (message) => runtime.log(message),
+      },
+    });
+    if (!installResult.ok) {
+      runtime.error(`Failed to install ${installProviderSpec}: ${installResult.error}`);
+      runtime.exit(1);
+      return;
+    }
+
+    const resolvedAuthChoice = resolveInstalledCommunityProviderAuthChoice({
+      authChoices: installResult.authChoices,
+      tokenProvider: opts.tokenProvider,
+    });
+    if (!opts.authChoice && !resolvedAuthChoice) {
+      runtime.error(
+        [
+          `Installed ${installResult.pluginName}, but it declares multiple API-key providers.`,
+          "Pass --auth-choice plugin-auth:<...> or --token-provider <provider-id> to disambiguate.",
+          `Discovered: ${installResult.authChoices.map((choice) => `${choice.label} (${choice.authChoice})`).join(", ")}`,
+        ].join("\n"),
+      );
+      runtime.exit(1);
+      return;
+    }
+
+    if (resolvedAuthChoice) {
+      installedProviderAuthChoice = resolvedAuthChoice.authChoice as AuthChoice;
+    }
+    runtime.log(
+      `Installed ${installResult.pluginName}. Found provider auth: ${installResult.authChoices
+        .map((choice) => choice.label)
+        .join(", ")}`,
+    );
+  }
+
   const inferredAuthChoice = inferAuthChoiceFromFlags(opts);
-  if (!opts.authChoice && inferredAuthChoice.matches.length > 1) {
+  if (!opts.authChoice && !installedProviderAuthChoice && inferredAuthChoice.matches.length > 1) {
     runtime.error(
       [
         "Multiple API key flags were provided for non-interactive onboarding.",
@@ -62,7 +111,8 @@ export async function runNonInteractiveOnboardingLocal(params: {
     runtime.exit(1);
     return;
   }
-  const authChoice = opts.authChoice ?? inferredAuthChoice.choice ?? "skip";
+  const authChoice =
+    opts.authChoice ?? installedProviderAuthChoice ?? inferredAuthChoice.choice ?? "skip";
   const nextConfigAfterAuth = await applyNonInteractiveAuthChoice({
     nextConfig,
     authChoice,

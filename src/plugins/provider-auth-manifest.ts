@@ -93,11 +93,13 @@ export function resolveDeclarativeProviderAuthSpecs(
   params: {
     config?: OpenClawConfig;
     workspaceDir?: string;
+    cache?: boolean;
   } = {},
 ): DeclarativeProviderAuthSpec[] {
   const registry = loadPluginManifestRegistry({
     config: params.config,
     workspaceDir: resolveWorkspaceDir(params),
+    cache: params.cache,
   });
   const specs: DeclarativeProviderAuthSpec[] = [];
   const seenChoices = new Set<string>();
@@ -122,7 +124,7 @@ export function resolveDeclarativeProviderAuthSpecs(
 
 export function findDeclarativeProviderAuthByChoice(
   authChoice: string,
-  params: { config?: OpenClawConfig; workspaceDir?: string } = {},
+  params: { config?: OpenClawConfig; workspaceDir?: string; cache?: boolean } = {},
 ): DeclarativeProviderAuthSpec | undefined {
   const resolved = normalizeOptionalString(authChoice);
   if (!resolved) {
@@ -133,7 +135,7 @@ export function findDeclarativeProviderAuthByChoice(
 
 export function findDeclarativeProviderAuthByTokenProvider(
   tokenProvider: string,
-  params: { config?: OpenClawConfig; workspaceDir?: string } = {},
+  params: { config?: OpenClawConfig; workspaceDir?: string; cache?: boolean } = {},
 ): DeclarativeProviderAuthSpec | undefined {
   const normalized = normalizeProviderId(tokenProvider);
   return resolveDeclarativeProviderAuthSpecs(params).find(
@@ -143,7 +145,7 @@ export function findDeclarativeProviderAuthByTokenProvider(
 
 export function findDeclarativeProviderAuthByProvider(
   provider: string,
-  params: { config?: OpenClawConfig; workspaceDir?: string } = {},
+  params: { config?: OpenClawConfig; workspaceDir?: string; cache?: boolean } = {},
 ): DeclarativeProviderAuthSpec | undefined {
   const normalized = normalizeProviderId(provider);
   return resolveDeclarativeProviderAuthSpecs(params).find(

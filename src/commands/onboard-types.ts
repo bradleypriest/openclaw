@@ -58,6 +58,8 @@ export type OnboardOptions = {
   acceptRisk?: boolean;
   reset?: boolean;
   authChoice?: AuthChoice;
+  /** Install an npm provider plugin before auth selection (non-interactive). */
+  installProvider?: string;
   /** Used when `authChoice=token` in non-interactive mode. */
   tokenProvider?: string;
   /** Used when `authChoice=token` in non-interactive mode. */

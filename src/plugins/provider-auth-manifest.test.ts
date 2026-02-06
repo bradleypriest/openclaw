@@ -13,6 +13,7 @@ vi.mock("./manifest-registry.js", () => ({
 
 describe("provider-auth-manifest", () => {
   afterEach(() => {
+    vi.resetModules();
     loadPluginManifestRegistry.mockReset();
     loadPluginManifestRegistry.mockReturnValue({ plugins: [], diagnostics: [] });
   });
@@ -38,6 +39,7 @@ describe("provider-auth-manifest", () => {
       diagnostics: [],
     });
 
+    vi.resetModules();
     const { resolveDeclarativeProviderAuthSpecs } = await import("./provider-auth-manifest.js");
     const specs = resolveDeclarativeProviderAuthSpecs();
 
@@ -73,6 +75,7 @@ describe("provider-auth-manifest", () => {
       diagnostics: [],
     });
 
+    vi.resetModules();
     const { findDeclarativeProviderAuthByTokenProvider } =
       await import("./provider-auth-manifest.js");
     const spec = findDeclarativeProviderAuthByTokenProvider("z-ai");
