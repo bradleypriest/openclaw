@@ -1,5 +1,7 @@
 import type { AuthProfileStore } from "../agents/auth-profiles.js";
+import type { OpenClawConfig } from "../config/config.js";
 import type { AuthChoice } from "./onboard-types.js";
+import { resolveDeclarativeProviderAuthSpecs } from "../plugins/provider-auth-manifest.js";
 
 export type AuthChoiceOption = {
   value: AuthChoice;
@@ -7,23 +9,7 @@ export type AuthChoiceOption = {
   hint?: string;
 };
 
-export type AuthChoiceGroupId =
-  | "openai"
-  | "anthropic"
-  | "google"
-  | "copilot"
-  | "openrouter"
-  | "ai-gateway"
-  | "cloudflare-ai-gateway"
-  | "moonshot"
-  | "zai"
-  | "xiaomi"
-  | "opencode-zen"
-  | "minimax"
-  | "synthetic"
-  | "venice"
-  | "qwen"
-  | "xai";
+export type AuthChoiceGroupId = string;
 
 export type AuthChoiceGroup = {
   value: AuthChoiceGroupId;
@@ -136,9 +122,57 @@ const AUTH_CHOICE_GROUP_DEFS: {
   },
 ];
 
+type ResolvedAuthChoiceGroupDef = {
+  value: AuthChoiceGroupId;
+  label: string;
+  hint?: string;
+  choices: AuthChoice[];
+};
+
+function resolveAuthChoiceGroupDefs(params: {
+  config?: OpenClawConfig;
+  workspaceDir?: string;
+}): ResolvedAuthChoiceGroupDef[] {
+  const defs: ResolvedAuthChoiceGroupDef[] = AUTH_CHOICE_GROUP_DEFS.map((group) => ({
+    ...group,
+    choices: [...group.choices],
+  }));
+  const groupIndex = new Map(defs.map((group, index) => [group.value, index]));
+  const pluginOptions = resolveDeclarativeProviderAuthSpecs({
+    config: params.config,
+    workspaceDir: params.workspaceDir,
+  }).filter((entry) => entry.method === "api-key");
+
+  for (const option of pluginOptions) {
+    const index = groupIndex.get(option.groupId);
+    if (index === undefined) {
+      defs.push({
+        value: option.groupId,
+        label: option.groupLabel,
+        hint: option.groupHint,
+        choices: [option.authChoice as AuthChoice],
+      });
+      groupIndex.set(option.groupId, defs.length - 1);
+      continue;
+    }
+
+    const group = defs[index];
+    if (!group.choices.includes(option.authChoice as AuthChoice)) {
+      group.choices.push(option.authChoice as AuthChoice);
+    }
+    if (!group.hint && option.groupHint) {
+      group.hint = option.groupHint;
+    }
+  }
+
+  return defs;
+}
+
 export function buildAuthChoiceOptions(params: {
   store: AuthProfileStore;
   includeSkip: boolean;
+  config?: OpenClawConfig;
+  workspaceDir?: string;
 }): AuthChoiceOption[] {
   void params.store;
   const options: AuthChoiceOption[] = [];
@@ -226,6 +260,21 @@ export function buildAuthChoiceOptions(params: {
     label: "MiniMax M2.1 Lightning",
     hint: "Faster, higher output cost",
   });
+
+  const existingValues = new Set<AuthChoice>(options.map((option) => option.value));
+  const pluginOptions = resolveDeclarativeProviderAuthSpecs({
+    config: params.config,
+    workspaceDir: params.workspaceDir,
+  }).filter((entry) => entry.method === "api-key");
+  for (const option of pluginOptions) {
+    const value = option.authChoice as AuthChoice;
+    if (existingValues.has(value)) {
+      continue;
+    }
+    options.push({ value, label: option.label, hint: option.hint });
+    existingValues.add(value);
+  }
+
   if (params.includeSkip) {
     options.push({ value: "skip", label: "Skip for now" });
   }
@@ -233,7 +282,12 @@ export function buildAuthChoiceOptions(params: {
   return options;
 }
 
-export function buildAuthChoiceGroups(params: { store: AuthProfileStore; includeSkip: boolean }): {
+export function buildAuthChoiceGroups(params: {
+  store: AuthProfileStore;
+  includeSkip: boolean;
+  config?: OpenClawConfig;
+  workspaceDir?: string;
+}): {
   groups: AuthChoiceGroup[];
   skipOption?: AuthChoiceOption;
 } {
@@ -245,7 +299,12 @@ export function buildAuthChoiceGroups(params: { store: AuthProfileStore; include
     options.map((opt) => [opt.value, opt]),
   );
 
-  const groups = AUTH_CHOICE_GROUP_DEFS.map((group) => ({
+  const groupDefs = resolveAuthChoiceGroupDefs({
+    config: params.config,
+    workspaceDir: params.workspaceDir,
+  });
+
+  const groups = groupDefs.map((group) => ({
     ...group,
     options: group.choices
       .map((choice) => optionByValue.get(choice))

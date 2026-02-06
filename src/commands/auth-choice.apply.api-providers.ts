@@ -1,6 +1,17 @@
+import type { OpenClawConfig } from "../config/config.js";
 import type { ApplyAuthChoiceParams, ApplyAuthChoiceResult } from "./auth-choice.apply.js";
-import { ensureAuthProfileStore, resolveAuthProfileOrder } from "../agents/auth-profiles.js";
+import {
+  ensureAuthProfileStore,
+  resolveAuthProfileOrder,
+  upsertAuthProfile,
+} from "../agents/auth-profiles.js";
 import { resolveEnvApiKey } from "../agents/model-auth.js";
+import { normalizeProviderId } from "../agents/model-selection.js";
+import { enablePluginInConfig } from "../plugins/enable.js";
+import {
+  findDeclarativeProviderAuthByChoice,
+  findDeclarativeProviderAuthByTokenProvider,
+} from "../plugins/provider-auth-manifest.js";
 import {
   formatApiKeyPreview,
   normalizeApiKeyInput,
@@ -57,6 +68,151 @@ import {
 } from "./onboard-auth.js";
 import { OPENCODE_ZEN_DEFAULT_MODEL } from "./opencode-zen-model-default.js";
 
+function applyProviderModelConfig(cfg: OpenClawConfig, modelRef: string): OpenClawConfig {
+  const models = { ...cfg.agents?.defaults?.models };
+  models[modelRef] = {
+    ...models[modelRef],
+  };
+
+  return {
+    ...cfg,
+    agents: {
+      ...cfg.agents,
+      defaults: {
+        ...cfg.agents?.defaults,
+        models,
+      },
+    },
+  };
+}
+
+function applyDefaultModelConfig(cfg: OpenClawConfig, modelRef: string): OpenClawConfig {
+  const next = applyProviderModelConfig(cfg, modelRef);
+  const existingModel = next.agents?.defaults?.model;
+  return {
+    ...next,
+    agents: {
+      ...next.agents,
+      defaults: {
+        ...next.agents?.defaults,
+        model: {
+          ...(existingModel && "fallbacks" in (existingModel as Record<string, unknown>)
+            ? {
+                fallbacks: (existingModel as { fallbacks?: string[] }).fallbacks,
+              }
+            : undefined),
+          primary: modelRef,
+        },
+      },
+    },
+  };
+}
+
+async function applyDeclarativeApiKeyProvider(params: {
+  params: ApplyAuthChoiceParams;
+  nextConfig: OpenClawConfig;
+  agentModelOverride?: string;
+  noteAgentModel: (model: string) => Promise<void>;
+  authChoice: string;
+}): Promise<{ config: OpenClawConfig; agentModelOverride?: string } | null> {
+  const declarative = findDeclarativeProviderAuthByChoice(params.authChoice, {
+    config: params.nextConfig,
+  });
+  if (!declarative || declarative.method !== "api-key") {
+    return null;
+  }
+
+  const enableResult = enablePluginInConfig(params.nextConfig, declarative.pluginId);
+  let nextConfig = enableResult.config;
+  if (!enableResult.enabled) {
+    await params.params.prompter.note(
+      `${declarative.label} plugin is disabled (${enableResult.reason ?? "blocked"}).`,
+      declarative.label,
+    );
+    return { config: nextConfig, agentModelOverride: params.agentModelOverride };
+  }
+
+  const tokenProvider = normalizeProviderId(params.params.opts?.tokenProvider ?? "");
+  const token = params.params.opts?.token;
+  let hasCredential = false;
+
+  if (token && tokenProvider && tokenProvider === normalizeProviderId(declarative.providerId)) {
+    upsertAuthProfile({
+      profileId: declarative.profileId,
+      credential: {
+        type: "api_key",
+        provider: declarative.providerId,
+        key: normalizeApiKeyInput(token),
+      },
+      agentDir: params.params.agentDir,
+    });
+    hasCredential = true;
+  }
+
+  if (!hasCredential) {
+    const envKey = resolveEnvApiKey(declarative.providerId);
+    if (envKey) {
+      const useExisting = await params.params.prompter.confirm({
+        message: `Use existing API key for ${declarative.label} (${envKey.source}, ${formatApiKeyPreview(envKey.apiKey)})?`,
+        initialValue: true,
+      });
+      if (useExisting) {
+        upsertAuthProfile({
+          profileId: declarative.profileId,
+          credential: {
+            type: "api_key",
+            provider: declarative.providerId,
+            key: normalizeApiKeyInput(envKey.apiKey),
+          },
+          agentDir: params.params.agentDir,
+        });
+        hasCredential = true;
+      }
+    }
+  }
+
+  if (!hasCredential) {
+    const key = await params.params.prompter.text({
+      message: declarative.keyPrompt,
+      validate: validateApiKeyInput,
+    });
+    upsertAuthProfile({
+      profileId: declarative.profileId,
+      credential: {
+        type: "api_key",
+        provider: declarative.providerId,
+        key: normalizeApiKeyInput(String(key)),
+      },
+      agentDir: params.params.agentDir,
+    });
+  }
+
+  nextConfig = applyAuthProfileConfig(nextConfig, {
+    profileId: declarative.profileId,
+    provider: declarative.providerId,
+    mode: "api_key",
+  });
+  let agentModelOverride = params.agentModelOverride;
+
+  if (declarative.defaultModel) {
+    const defaultModel = declarative.defaultModel;
+    const applied = await applyDefaultModelChoice({
+      config: nextConfig,
+      setDefaultModel: params.params.setDefaultModel,
+      defaultModel,
+      applyDefaultConfig: (cfg) => applyDefaultModelConfig(cfg, defaultModel),
+      applyProviderConfig: (cfg) => applyProviderModelConfig(cfg, defaultModel),
+      noteDefault: defaultModel,
+      noteAgentModel: params.noteAgentModel,
+      prompter: params.params.prompter,
+    });
+    nextConfig = applied.config;
+    agentModelOverride = applied.agentModelOverride ?? agentModelOverride;
+  }
+
+  return { config: nextConfig, agentModelOverride };
+}
+
 export async function applyAuthChoiceApiProviders(
   params: ApplyAuthChoiceParams,
 ): Promise<ApplyAuthChoiceResult | null> {
@@ -104,7 +260,25 @@ export async function applyAuthChoiceApiProviders(
       authChoice = "venice-api-key";
     } else if (params.opts.tokenProvider === "opencode") {
       authChoice = "opencode-zen";
+    } else {
+      const declarative = findDeclarativeProviderAuthByTokenProvider(params.opts.tokenProvider, {
+        config: nextConfig,
+      });
+      if (declarative) {
+        authChoice = declarative.authChoice as typeof authChoice;
+      }
     }
+  }
+
+  const declarativeResult = await applyDeclarativeApiKeyProvider({
+    params,
+    nextConfig,
+    agentModelOverride,
+    noteAgentModel,
+    authChoice,
+  });
+  if (declarativeResult) {
+    return declarativeResult;
   }
 
   if (authChoice === "openrouter-api-key") {

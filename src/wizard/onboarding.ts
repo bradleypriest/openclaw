@@ -376,6 +376,8 @@ export async function runOnboardingWizard(
       prompter,
       store: authStore,
       includeSkip: true,
+      config: nextConfig,
+      workspaceDir,
     }));
 
   const authResult = await applyAuthChoice({
