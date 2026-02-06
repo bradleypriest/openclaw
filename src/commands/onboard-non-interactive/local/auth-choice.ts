@@ -87,6 +87,59 @@ function applyDefaultModelConfig(cfg: OpenClawConfig, modelRef: string): OpenCla
   };
 }
 
+function mapTokenProviderToBuiltinApiAuthChoice(tokenProviderRaw?: string): AuthChoice | undefined {
+  const tokenProvider = tokenProviderRaw?.trim();
+  if (!tokenProvider) {
+    return undefined;
+  }
+
+  const provider = normalizeProviderId(tokenProvider);
+  if (provider === "openai") {
+    return "openai-api-key";
+  }
+  if (provider === "openrouter") {
+    return "openrouter-api-key";
+  }
+  if (provider === "vercel-ai-gateway") {
+    return "ai-gateway-api-key";
+  }
+  if (provider === "cloudflare-ai-gateway") {
+    return "cloudflare-ai-gateway-api-key";
+  }
+  if (provider === "moonshot") {
+    return "moonshot-api-key";
+  }
+  if (provider === "kimi-code" || provider === "kimi-coding") {
+    return "kimi-code-api-key";
+  }
+  if (provider === "google") {
+    return "gemini-api-key";
+  }
+  if (provider === "zai") {
+    return "zai-api-key";
+  }
+  if (provider === "xiaomi") {
+    return "xiaomi-api-key";
+  }
+  if (provider === "xai") {
+    return "xai-api-key";
+  }
+  if (provider === "synthetic") {
+    return "synthetic-api-key";
+  }
+  if (provider === "venice") {
+    return "venice-api-key";
+  }
+  if (provider === "opencode") {
+    return "opencode-zen";
+  }
+  if (provider === "minimax") {
+    return "minimax-api";
+  }
+
+  return undefined;
+}
+
 async function applyDeclarativeNonInteractiveApiKeyAuth(params: {
   nextConfig: OpenClawConfig;
   baseConfig: OpenClawConfig;
@@ -177,6 +230,14 @@ export async function applyNonInteractiveAuthChoice(params: {
   }
 
   if (authChoice === "apiKey") {
+    const builtinChoice = mapTokenProviderToBuiltinApiAuthChoice(opts.tokenProvider);
+    if (builtinChoice) {
+      return applyNonInteractiveAuthChoice({
+        ...params,
+        authChoice: builtinChoice,
+      });
+    }
+
     const tokenProvider = opts.tokenProvider?.trim();
     const declarative = tokenProvider
       ? findDeclarativeProviderAuthByTokenProvider(tokenProvider, {
@@ -195,6 +256,14 @@ export async function applyNonInteractiveAuthChoice(params: {
         defaultModel: declarative.defaultModel,
         envVars: declarative.envVars,
       });
+    }
+
+    if (tokenProvider && normalizeProviderId(tokenProvider) !== "anthropic") {
+      runtime.error(
+        `Unsupported --token-provider ${tokenProvider} for --auth-choice apiKey. Use --provider <provider-id> or <npm-package>:<provider-id>, or pass an explicit --auth-choice.`,
+      );
+      runtime.exit(1);
+      return null;
     }
 
     const resolved = await resolveNonInteractiveApiKey({

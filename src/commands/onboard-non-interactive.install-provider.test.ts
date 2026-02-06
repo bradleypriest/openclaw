@@ -140,9 +140,8 @@ describe("onboard (non-interactive): install-provider", () => {
       await runNonInteractiveOnboarding(
         {
           nonInteractive: true,
-          installProvider: "@openclaw/xai",
-          tokenProvider: "xai",
-          token: "xai-inline-token",
+          provider: "@openclaw/xai:xai",
+          apiKey: "xai-inline-token",
           skipHealth: true,
           skipChannels: true,
           skipSkills: true,

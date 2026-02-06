@@ -61,8 +61,13 @@ export function registerOnboardCommand(program: Command) {
       "Auth: setup-token|token|chutes|openai-codex|openai-api-key|openrouter-api-key|ai-gateway-api-key|cloudflare-ai-gateway-api-key|moonshot-api-key|moonshot-api-key-cn|kimi-code-api-key|synthetic-api-key|venice-api-key|gemini-api-key|zai-api-key|xiaomi-api-key|xai-api-key|apiKey|minimax-api|minimax-api-lightning|opencode-zen|skip",
     )
     .option(
+      "--provider <provider>",
+      "Provider shortcut: <provider-id> or <npm-package>:<provider-id>",
+    )
+    .option("--api-key <key>", "API key for --provider (non-interactive)")
+    .option(
       "--token-provider <id>",
-      "Token provider id (non-interactive; used with --auth-choice token)",
+      "Token provider id (non-interactive; used with --auth-choice token and advanced apiKey flows)",
     )
     .option(
       "--install-provider <npm-package>",
@@ -125,6 +130,8 @@ export function registerOnboardCommand(program: Command) {
             flow: opts.flow as "quickstart" | "advanced" | "manual" | undefined,
             mode: opts.mode as "local" | "remote" | undefined,
             authChoice: opts.authChoice as AuthChoice | undefined,
+            provider: opts.provider as string | undefined,
+            apiKey: opts.apiKey as string | undefined,
             installProvider: opts.installProvider as string | undefined,
             tokenProvider: opts.tokenProvider as string | undefined,
             token: opts.token as string | undefined,
