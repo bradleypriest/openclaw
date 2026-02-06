@@ -265,6 +265,8 @@ export async function agentsAddCommand(
         prompter,
         store: authStore,
         includeSkip: true,
+        config: nextConfig,
+        workspaceDir: resolveAgentWorkspaceDir(nextConfig, agentId),
       });
 
       const authResult = await applyAuthChoice({
