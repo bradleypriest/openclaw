@@ -58,18 +58,18 @@ function resolveInstalledProviderAuthChoices(params: {
 
 export function resolveInstalledCommunityProviderAuthChoice(params: {
   authChoices: InstalledCommunityProviderAuth[];
-  tokenProvider?: string;
+  provider?: string;
 }): InstalledCommunityProviderAuth | undefined {
   if (params.authChoices.length === 1) {
     return params.authChoices[0];
   }
 
-  const tokenProvider = params.tokenProvider?.trim();
-  if (!tokenProvider) {
+  const provider = params.provider?.trim();
+  if (!provider) {
     return undefined;
   }
 
-  const normalized = normalizeProviderId(tokenProvider);
+  const normalized = normalizeProviderId(provider);
   return params.authChoices.find((entry) => normalizeProviderId(entry.providerId) === normalized);
 }
 

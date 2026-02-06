@@ -89,13 +89,13 @@ function applyDefaultModelConfig(cfg: OpenClawConfig, modelRef: string): OpenCla
   };
 }
 
-function mapTokenProviderToBuiltinApiAuthChoice(tokenProviderRaw?: string): AuthChoice | undefined {
-  const tokenProvider = tokenProviderRaw?.trim();
-  if (!tokenProvider) {
+function mapProviderToBuiltinApiAuthChoice(providerRaw?: string): AuthChoice | undefined {
+  const providerInput = providerRaw?.trim();
+  if (!providerInput) {
     return undefined;
   }
 
-  const provider = normalizeProviderId(tokenProvider);
+  const provider = normalizeProviderId(providerInput);
   if (provider === "openai") {
     return "openai-api-key";
   }
@@ -167,7 +167,7 @@ async function applyDeclarativeNonInteractiveApiKeyAuth(params: {
     provider: params.providerId,
     cfg: params.baseConfig,
     flagValue: params.token,
-    flagName: "--token",
+    flagName: "--api-key",
     envVar: envVarLabel,
     runtime: params.runtime,
   });
@@ -224,7 +224,7 @@ export async function applyNonInteractiveAuthChoice(params: {
     runtime.error(
       [
         'Auth choice "setup-token" requires interactive mode.',
-        'Use "--auth-choice token" with --token and --token-provider anthropic.',
+        'Use "--auth-choice token" with --token and --provider anthropic.',
       ].join("\n"),
     );
     runtime.exit(1);
@@ -232,7 +232,7 @@ export async function applyNonInteractiveAuthChoice(params: {
   }
 
   if (authChoice === "apiKey") {
-    const builtinChoice = mapTokenProviderToBuiltinApiAuthChoice(opts.tokenProvider);
+    const builtinChoice = mapProviderToBuiltinApiAuthChoice(opts.provider);
     if (builtinChoice) {
       return applyNonInteractiveAuthChoice({
         ...params,
@@ -240,9 +240,9 @@ export async function applyNonInteractiveAuthChoice(params: {
       });
     }
 
-    const tokenProvider = opts.tokenProvider?.trim();
-    const declarative = tokenProvider
-      ? findDeclarativeProviderAuthByTokenProvider(tokenProvider, {
+    const provider = opts.provider?.trim();
+    const declarative = provider
+      ? findDeclarativeProviderAuthByTokenProvider(provider, {
           config: baseConfig,
         })
       : undefined;
@@ -260,9 +260,9 @@ export async function applyNonInteractiveAuthChoice(params: {
       });
     }
 
-    if (tokenProvider && normalizeProviderId(tokenProvider) !== "anthropic") {
+    if (provider && normalizeProviderId(provider) !== "anthropic") {
       runtime.error(
-        `Unsupported --token-provider ${tokenProvider} for --auth-choice apiKey. Use --provider <provider-id> or <npm-package>:<provider-id>, or pass an explicit --auth-choice.`,
+        `Unsupported --provider ${provider} for --auth-choice apiKey. Use --provider <provider-id> or <npm-package>:<provider-id>, or pass an explicit --auth-choice.`,
       );
       runtime.exit(1);
       return null;
@@ -290,15 +290,15 @@ export async function applyNonInteractiveAuthChoice(params: {
   }
 
   if (authChoice === "token") {
-    const providerRaw = opts.tokenProvider?.trim();
+    const providerRaw = opts.provider?.trim();
     if (!providerRaw) {
-      runtime.error("Missing --token-provider for --auth-choice token.");
+      runtime.error("Missing --provider for --auth-choice token.");
       runtime.exit(1);
       return null;
     }
     const provider = normalizeProviderId(providerRaw);
     if (provider !== "anthropic") {
-      runtime.error("Only --token-provider anthropic is supported for --auth-choice token.");
+      runtime.error("Only --provider anthropic is supported for --auth-choice token.");
       runtime.exit(1);
       return null;
     }
