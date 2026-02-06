@@ -33,7 +33,7 @@ describe("provider-install", () => {
       provider: "z-ai",
       authChoices: [
         {
-          authChoice: "plugin-auth:zai-provider:zai:api-key",
+          authChoice: "plugin:zai-provider:zai:api-key",
           providerId: "zai",
           label: "Z.AI",
           pluginId: "zai-provider",
@@ -41,7 +41,7 @@ describe("provider-install", () => {
       ],
     });
 
-    expect(choice?.authChoice).toBe("plugin-auth:zai-provider:zai:api-key");
+    expect(choice?.authChoice).toBe("plugin:zai-provider:zai:api-key");
   });
 
   it("installs provider and returns declarative auth choices", async () => {
@@ -63,7 +63,7 @@ describe("provider-install", () => {
       {
         pluginId: "xai-provider",
         providerId: "xai",
-        authChoice: "plugin-auth:xai-provider:xai:api-key",
+        authChoice: "plugin:xai-provider:xai:api-key",
         method: "api-key",
         label: "xAI (Grok)",
         hint: "API key",
@@ -79,7 +79,7 @@ describe("provider-install", () => {
     if (result.ok) {
       expect(result.pluginId).toBe("xai-provider");
       expect(result.authChoices).toHaveLength(1);
-      expect(result.authChoices[0]?.authChoice).toBe("plugin-auth:xai-provider:xai:api-key");
+      expect(result.authChoices[0]?.authChoice).toBe("plugin:xai-provider:xai:api-key");
     }
   });
 

@@ -191,7 +191,7 @@ export async function runNonInteractiveOnboardingLocal(params: {
       runtime.error(
         [
           `Installed ${installResult.pluginName}, but it declares multiple API-key providers.`,
-          "Pass --provider <npm-package>:<provider-id> or --auth-choice plugin-auth:<...> to disambiguate.",
+          "Pass --provider <npm-package>:<provider-id> or --auth-choice plugin:<...> to disambiguate.",
           `Discovered: ${installResult.authChoices.map((choice) => `${choice.label} (${choice.authChoice})`).join(", ")}`,
         ].join("\n"),
       );

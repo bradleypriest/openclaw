@@ -34,7 +34,7 @@ describe("promptAuthChoiceGrouped", () => {
       pluginName: "xAI (Grok)",
       authChoices: [
         {
-          authChoice: "plugin-auth:xai-provider:xai:api-key",
+          authChoice: "plugin:xai-provider:xai:api-key",
           providerId: "xai",
           label: "xAI (Grok)",
           hint: "API key",
@@ -71,7 +71,7 @@ describe("promptAuthChoiceGrouped", () => {
       config: {},
     });
 
-    expect(choice).toBe("plugin-auth:xai-provider:xai:api-key");
+    expect(choice).toBe("plugin:xai-provider:xai:api-key");
     expect(installCommunityProviderFromNpm).toHaveBeenCalledWith(
       expect.objectContaining({ npmSpec: "@openclaw/xai" }),
     );
