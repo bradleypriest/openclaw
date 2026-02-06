@@ -39,7 +39,7 @@ export type BuiltInAuthChoice =
   | "qianfan-api-key"
   | "skip";
 
-export type AuthChoice = BuiltInAuthChoice | `plugin-auth:${string}`;
+export type AuthChoice = BuiltInAuthChoice | `plugin:${string}`;
 export type GatewayAuthChoice = "token" | "password";
 export type ResetScope = "config" | "config+creds+sessions" | "full";
 export type GatewayBind = "loopback" | "lan" | "auto" | "custom" | "tailnet";

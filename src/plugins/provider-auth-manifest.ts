@@ -6,7 +6,7 @@ import type {
 import { normalizeProviderId } from "../agents/model-selection.js";
 import { loadPluginManifestRegistry, type PluginManifestRecord } from "./manifest-registry.js";
 
-export const PLUGIN_AUTH_CHOICE_PREFIX = "plugin-auth";
+export const PLUGIN_AUTH_CHOICE_PREFIX = "plugin";
 
 export type DeclarativeProviderAuthSpec = {
   pluginId: string;

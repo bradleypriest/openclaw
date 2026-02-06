@@ -142,7 +142,7 @@ describe("buildAuthChoiceOptions", () => {
       {
         pluginId: "xai-provider",
         providerId: "xai",
-        authChoice: "plugin-auth:xai-provider:xai:api-key",
+        authChoice: "plugin:xai-provider:xai:api-key",
         method: "api-key",
         label: "xAI (Grok)",
         hint: "API key",
@@ -160,6 +160,6 @@ describe("buildAuthChoiceOptions", () => {
       includeSkip: false,
     });
 
-    expect(options.some((opt) => opt.value === "plugin-auth:xai-provider:xai:api-key")).toBe(true);
+    expect(options.some((opt) => opt.value === "plugin:xai-provider:xai:api-key")).toBe(true);
   });
 });
