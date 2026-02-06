@@ -65,14 +65,6 @@ export function registerOnboardCommand(program: Command) {
       "Provider shortcut: <provider-id> or <npm-package>:<provider-id>",
     )
     .option("--api-key <key>", "API key for --provider (non-interactive)")
-    .option(
-      "--token-provider <id>",
-      "Token provider id (non-interactive; used with --auth-choice token and advanced apiKey flows)",
-    )
-    .option(
-      "--install-provider <npm-package>",
-      "Install an npm provider plugin before non-interactive auth",
-    )
     .option("--token <token>", "Token value (non-interactive; used with --auth-choice token)")
     .option(
       "--token-profile-id <id>",
@@ -132,8 +124,6 @@ export function registerOnboardCommand(program: Command) {
             authChoice: opts.authChoice as AuthChoice | undefined,
             provider: opts.provider as string | undefined,
             apiKey: opts.apiKey as string | undefined,
-            installProvider: opts.installProvider as string | undefined,
-            tokenProvider: opts.tokenProvider as string | undefined,
             token: opts.token as string | undefined,
             tokenProfileId: opts.tokenProfileId as string | undefined,
             tokenExpiresIn: opts.tokenExpiresIn as string | undefined,

@@ -66,42 +66,21 @@ export async function runNonInteractiveOnboardingLocal(params: {
   const { opts, runtime, baseConfig } = params;
   const mode = "local" as const;
 
-  const providerShortcut = opts.provider?.trim() ? parseProviderShortcut(opts.provider) : undefined;
-  if (opts.provider && !providerShortcut) {
+  const providerInputRaw = opts.provider?.trim();
+  const providerShortcut = providerInputRaw ? parseProviderShortcut(providerInputRaw) : undefined;
+  if (providerInputRaw && !providerShortcut) {
     runtime.error(
-      `Invalid --provider value "${opts.provider}". Use <provider-id> or <npm-package>:<provider-id>.`,
+      `Invalid --provider value "${providerInputRaw}". Use <provider-id> or <npm-package>:<provider-id>.`,
     );
     runtime.exit(1);
     return;
   }
 
   if (providerShortcut) {
-    if (providerShortcut.installProvider) {
-      const installProvider = opts.installProvider?.trim();
-      if (installProvider && installProvider !== providerShortcut.installProvider) {
-        runtime.error(
-          `Conflicting provider package values: --install-provider ${installProvider} vs --provider ${providerShortcut.installProvider}:${providerShortcut.providerId}.`,
-        );
-        runtime.exit(1);
-        return;
-      }
-      opts.installProvider = providerShortcut.installProvider;
-    }
-
-    const tokenProvider = opts.tokenProvider?.trim();
-    if (
-      tokenProvider &&
-      normalizeProviderId(tokenProvider) !== normalizeProviderId(providerShortcut.providerId)
-    ) {
-      runtime.error(
-        `Conflicting provider ids: --token-provider ${tokenProvider} vs --provider ${providerShortcut.providerId}.`,
-      );
-      runtime.exit(1);
-      return;
-    }
-    opts.tokenProvider = providerShortcut.providerId;
+    opts.provider = providerShortcut.providerId;
   }
 
+  const resolvedProviderId = opts.provider?.trim();
   const apiKeyShortcut = opts.apiKey?.trim();
   if (apiKeyShortcut) {
     const existingToken = opts.token?.trim();
@@ -112,7 +91,7 @@ export async function runNonInteractiveOnboardingLocal(params: {
     }
     opts.token = apiKeyShortcut;
 
-    const provider = normalizeProviderId(opts.tokenProvider ?? "");
+    const provider = normalizeProviderId(resolvedProviderId ?? "");
     if (provider === "anthropic") {
       opts.anthropicApiKey ??= apiKeyShortcut;
     } else if (provider === "openai") {
@@ -168,7 +147,7 @@ export async function runNonInteractiveOnboardingLocal(params: {
   };
 
   let installedProviderAuthChoice: AuthChoice | undefined;
-  const installProviderSpec = opts.installProvider?.trim();
+  const installProviderSpec = providerShortcut?.installProvider;
   if (installProviderSpec) {
     runtime.log(`Installing community provider: ${installProviderSpec}`);
     const installResult = await installCommunityProviderFromNpm({
@@ -188,13 +167,13 @@ export async function runNonInteractiveOnboardingLocal(params: {
 
     const resolvedAuthChoice = resolveInstalledCommunityProviderAuthChoice({
       authChoices: installResult.authChoices,
-      tokenProvider: opts.tokenProvider,
+      provider: resolvedProviderId,
     });
     if (!opts.authChoice && !resolvedAuthChoice) {
       runtime.error(
         [
           `Installed ${installResult.pluginName}, but it declares multiple API-key providers.`,
-          "Pass --provider <npm-package>:<provider-id>, --auth-choice plugin-auth:<...>, or --token-provider <provider-id> to disambiguate.",
+          "Pass --provider <npm-package>:<provider-id> or --auth-choice plugin-auth:<...> to disambiguate.",
           `Discovered: ${installResult.authChoices.map((choice) => `${choice.label} (${choice.authChoice})`).join(", ")}`,
         ].join("\n"),
       );
@@ -212,8 +191,8 @@ export async function runNonInteractiveOnboardingLocal(params: {
     );
   }
 
-  const providerShortcutRequested = Boolean(providerShortcut || apiKeyShortcut);
-  if (providerShortcutRequested && !opts.tokenProvider?.trim() && !opts.authChoice) {
+  const providerShortcutRequested = Boolean(providerInputRaw || apiKeyShortcut);
+  if (providerShortcutRequested && !resolvedProviderId && !opts.authChoice) {
     runtime.error(
       "Missing provider id. Use --provider <provider-id> or <npm-package>:<provider-id>.",
     );
@@ -223,7 +202,7 @@ export async function runNonInteractiveOnboardingLocal(params: {
 
   const inferredProviderAuthChoice =
     !opts.authChoice && !installedProviderAuthChoice
-      ? providerShortcutRequested && opts.tokenProvider?.trim()
+      ? providerShortcutRequested && resolvedProviderId
         ? ("apiKey" as const)
         : undefined
       : undefined;
@@ -234,7 +213,7 @@ export async function runNonInteractiveOnboardingLocal(params: {
     !installedProviderAuthChoice &&
     !inferredProviderAuthChoice
   ) {
-    runtime.error(`Could not resolve provider input "${opts.provider}".`);
+    runtime.error(`Could not resolve provider input "${providerInputRaw ?? opts.provider}".`);
     runtime.exit(1);
     return;
   }

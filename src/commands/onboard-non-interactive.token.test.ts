@@ -48,7 +48,7 @@ describe("onboard (non-interactive): token auth", () => {
         {
           nonInteractive: true,
           authChoice: "token",
-          tokenProvider: "anthropic",
+          provider: "anthropic",
           token,
           tokenProfileId: "anthropic:default",
           skipHealth: true,

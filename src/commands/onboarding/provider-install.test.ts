@@ -26,11 +26,11 @@ describe("provider-install", () => {
     resolveDeclarativeProviderAuthSpecs.mockReturnValue([]);
   });
 
-  it("resolves installed provider auth choice from token provider", async () => {
+  it("resolves installed provider auth choice from provider id", async () => {
     const { resolveInstalledCommunityProviderAuthChoice } = await import("./provider-install.js");
 
     const choice = resolveInstalledCommunityProviderAuthChoice({
-      tokenProvider: "z-ai",
+      provider: "z-ai",
       authChoices: [
         {
           authChoice: "plugin-auth:zai-provider:zai:api-key",
