@@ -64,6 +64,10 @@ export function registerOnboardCommand(program: Command) {
       "--provider <provider>",
       "Provider shortcut: <provider-id> or <npm-package>:<provider-id>",
     )
+    .option(
+      "--token-provider <id>",
+      "Provider id for --auth-choice token (legacy alias for --provider)",
+    )
     .option("--api-key <key>", "API key for --provider (non-interactive)")
     .option("--token <token>", "Token value (non-interactive; used with --auth-choice token)")
     .option(
@@ -123,6 +127,7 @@ export function registerOnboardCommand(program: Command) {
             mode: opts.mode as "local" | "remote" | undefined,
             authChoice: opts.authChoice as AuthChoice | undefined,
             provider: opts.provider as string | undefined,
+            tokenProvider: opts.tokenProvider as string | undefined,
             apiKey: opts.apiKey as string | undefined,
             token: opts.token as string | undefined,
             tokenProfileId: opts.tokenProfileId as string | undefined,

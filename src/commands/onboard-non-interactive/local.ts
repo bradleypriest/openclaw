@@ -66,11 +66,15 @@ export async function runNonInteractiveOnboardingLocal(params: {
   const { opts, runtime, baseConfig } = params;
   const mode = "local" as const;
 
-  const providerInputRaw = opts.provider?.trim();
-  const providerShortcut = providerInputRaw ? parseProviderShortcut(providerInputRaw) : undefined;
-  if (providerInputRaw && !providerShortcut) {
+  const legacyTokenProvider = opts.tokenProvider?.trim();
+  const explicitProviderRaw = opts.provider?.trim();
+  const providerInputRaw = explicitProviderRaw ?? legacyTokenProvider;
+  const providerShortcut = explicitProviderRaw
+    ? parseProviderShortcut(explicitProviderRaw)
+    : undefined;
+  if (explicitProviderRaw && !providerShortcut) {
     runtime.error(
-      `Invalid --provider value "${providerInputRaw}". Use <provider-id> or <npm-package>:<provider-id>.`,
+      `Invalid --provider value "${explicitProviderRaw}". Use <provider-id> or <npm-package>:<provider-id>.`,
     );
     runtime.exit(1);
     return;
@@ -78,6 +82,20 @@ export async function runNonInteractiveOnboardingLocal(params: {
 
   if (providerShortcut) {
     opts.provider = providerShortcut.providerId;
+  } else if (legacyTokenProvider && !opts.provider?.trim()) {
+    opts.provider = legacyTokenProvider;
+  }
+
+  if (legacyTokenProvider && opts.provider?.trim()) {
+    const normalizedLegacy = normalizeProviderId(legacyTokenProvider);
+    const normalizedProvider = normalizeProviderId(opts.provider);
+    if (normalizedLegacy !== normalizedProvider) {
+      runtime.error(
+        `Conflicting provider ids: --token-provider ${legacyTokenProvider} vs --provider ${opts.provider}.`,
+      );
+      runtime.exit(1);
+      return;
+    }
   }
 
   const resolvedProviderId = opts.provider?.trim();
@@ -191,7 +209,9 @@ export async function runNonInteractiveOnboardingLocal(params: {
     );
   }
 
-  const providerShortcutRequested = Boolean(providerInputRaw || apiKeyShortcut);
+  const providerShortcutRequested = Boolean(
+    providerInputRaw || apiKeyShortcut || legacyTokenProvider,
+  );
   if (providerShortcutRequested && !resolvedProviderId && !opts.authChoice) {
     runtime.error(
       "Missing provider id. Use --provider <provider-id> or <npm-package>:<provider-id>.",
