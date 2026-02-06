@@ -836,11 +836,11 @@ describe("applyAuthChoice", () => {
     process.env.PI_CODING_AGENT_DIR = process.env.OPENCLAW_AGENT_DIR;
 
     findDeclarativeProviderAuthByChoice.mockImplementation((choice: string) =>
-      choice === "plugin-auth:xai-provider:xai:api-key"
+      choice === "plugin:xai-provider:xai:api-key"
         ? {
             pluginId: "xai-provider",
             providerId: "xai",
-            authChoice: "plugin-auth:xai-provider:xai:api-key",
+            authChoice: "plugin:xai-provider:xai:api-key",
             method: "api-key",
             label: "xAI (Grok)",
             hint: "API key",
@@ -874,7 +874,7 @@ describe("applyAuthChoice", () => {
     };
 
     const result = await applyAuthChoice({
-      authChoice: "plugin-auth:xai-provider:xai:api-key" as AuthChoice,
+      authChoice: "plugin:xai-provider:xai:api-key" as AuthChoice,
       config: {},
       prompter,
       runtime,
@@ -905,7 +905,7 @@ describe("applyAuthChoice", () => {
     findDeclarativeProviderAuthByTokenProvider.mockReturnValue({
       pluginId: "xai-provider",
       providerId: "xai",
-      authChoice: "plugin-auth:xai-provider:xai:api-key",
+      authChoice: "plugin:xai-provider:xai:api-key",
       method: "api-key",
       label: "xAI (Grok)",
       hint: "API key",
@@ -917,11 +917,11 @@ describe("applyAuthChoice", () => {
       keyPrompt: "Enter xAI API key",
     });
     findDeclarativeProviderAuthByChoice.mockImplementation((choice: string) =>
-      choice === "plugin-auth:xai-provider:xai:api-key"
+      choice === "plugin:xai-provider:xai:api-key"
         ? {
             pluginId: "xai-provider",
             providerId: "xai",
-            authChoice: "plugin-auth:xai-provider:xai:api-key",
+            authChoice: "plugin:xai-provider:xai:api-key",
             method: "api-key",
             label: "xAI (Grok)",
             hint: "API key",
@@ -998,7 +998,7 @@ describe("resolvePreferredProviderForAuthChoice", () => {
       providerId: "xai",
     });
     expect(
-      resolvePreferredProviderForAuthChoice("plugin-auth:xai-provider:xai:api-key" as AuthChoice),
+      resolvePreferredProviderForAuthChoice("plugin:xai-provider:xai:api-key" as AuthChoice),
     ).toBe("xai");
   });
 });

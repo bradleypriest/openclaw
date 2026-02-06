@@ -94,7 +94,7 @@ describe("onboard (non-interactive): install-provider", () => {
       pluginName: "xAI (Grok)",
       authChoices: [
         {
-          authChoice: "plugin-auth:community-xai:xai:api-key",
+          authChoice: "plugin:community-xai:xai:api-key",
           providerId: "xai",
           label: "xAI (Grok)",
           pluginId: "community-xai",
@@ -102,17 +102,17 @@ describe("onboard (non-interactive): install-provider", () => {
       ],
     });
     resolveInstalledCommunityProviderAuthChoice.mockReturnValue({
-      authChoice: "plugin-auth:community-xai:xai:api-key",
+      authChoice: "plugin:community-xai:xai:api-key",
       providerId: "xai",
       label: "xAI (Grok)",
       pluginId: "community-xai",
     });
     findDeclarativeProviderAuthByChoice.mockImplementation((choice: string) =>
-      choice === "plugin-auth:community-xai:xai:api-key"
+      choice === "plugin:community-xai:xai:api-key"
         ? {
             pluginId: "community-xai",
             providerId: "xai",
-            authChoice: "plugin-auth:community-xai:xai:api-key",
+            authChoice: "plugin:community-xai:xai:api-key",
             method: "api-key",
             label: "xAI (Grok)",
             envVars: ["XAI_API_KEY"],
