@@ -47,7 +47,7 @@ describe("provider-auth-manifest", () => {
     expect(specs[0]).toMatchObject({
       pluginId: "xai-provider",
       providerId: "xai",
-      authChoice: "plugin-auth:xai-provider:xai:api-key",
+      authChoice: "plugin:xai-provider:xai:api-key",
       method: "api-key",
       label: "xAI (Grok)",
       hint: "API key",
@@ -66,7 +66,7 @@ describe("provider-auth-manifest", () => {
           providerAuth: {
             zai: {
               method: "api-key",
-              authChoice: "plugin-auth:zai-provider:zai:api-key",
+              authChoice: "plugin:zai-provider:zai:api-key",
               label: "Z.AI",
             },
           },
@@ -81,6 +81,6 @@ describe("provider-auth-manifest", () => {
     const spec = findDeclarativeProviderAuthByTokenProvider("z-ai");
 
     expect(spec?.providerId).toBe("zai");
-    expect(spec?.authChoice).toBe("plugin-auth:zai-provider:zai:api-key");
+    expect(spec?.authChoice).toBe("plugin:zai-provider:zai:api-key");
   });
 });
