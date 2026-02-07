@@ -13,7 +13,7 @@ import {
   applyMinimaxApiProviderConfig,
   applyMinimaxConfig,
   applyMinimaxProviderConfig,
-  setMinimaxApiKey,
+  writeApiKeyCredential,
 } from "./onboard-auth.js";
 
 export async function applyAuthChoiceMiniMax(
@@ -64,7 +64,12 @@ export async function applyAuthChoiceMiniMax(
         initialValue: true,
       });
       if (useExisting) {
-        await setMinimaxApiKey(envKey.apiKey, params.agentDir);
+        await writeApiKeyCredential({
+          providerId: "minimax",
+          profileId: "minimax:default",
+          key: envKey.apiKey,
+          agentDir: params.agentDir,
+        });
         hasCredential = true;
       }
     }
@@ -73,7 +78,12 @@ export async function applyAuthChoiceMiniMax(
         message: "Enter MiniMax API key",
         validate: validateApiKeyInput,
       });
-      await setMinimaxApiKey(normalizeApiKeyInput(String(key)), params.agentDir);
+      await writeApiKeyCredential({
+        providerId: "minimax",
+        profileId: "minimax:default",
+        key: normalizeApiKeyInput(String(key)),
+        agentDir: params.agentDir,
+      });
     }
     nextConfig = applyAuthProfileConfig(nextConfig, {
       profileId: "minimax:default",

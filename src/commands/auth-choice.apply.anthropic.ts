@@ -6,7 +6,7 @@ import {
   validateApiKeyInput,
 } from "./auth-choice.api-key.js";
 import { buildTokenProfileId, validateAnthropicSetupToken } from "./auth-token.js";
-import { applyAuthProfileConfig, setAnthropicApiKey } from "./onboard-auth.js";
+import { applyAuthProfileConfig, writeApiKeyCredential } from "./onboard-auth.js";
 
 export async function applyAuthChoiceAnthropic(
   params: ApplyAuthChoiceParams,
@@ -68,7 +68,12 @@ export async function applyAuthChoiceAnthropic(
     const envKey = process.env.ANTHROPIC_API_KEY?.trim();
 
     if (params.opts?.token) {
-      await setAnthropicApiKey(normalizeApiKeyInput(params.opts.token), params.agentDir);
+      await writeApiKeyCredential({
+        providerId: "anthropic",
+        profileId: "anthropic:default",
+        key: normalizeApiKeyInput(params.opts.token),
+        agentDir: params.agentDir,
+      });
       hasCredential = true;
     }
 
@@ -78,7 +83,12 @@ export async function applyAuthChoiceAnthropic(
         initialValue: true,
       });
       if (useExisting) {
-        await setAnthropicApiKey(envKey, params.agentDir);
+        await writeApiKeyCredential({
+          providerId: "anthropic",
+          profileId: "anthropic:default",
+          key: envKey,
+          agentDir: params.agentDir,
+        });
         hasCredential = true;
       }
     }
@@ -87,7 +97,12 @@ export async function applyAuthChoiceAnthropic(
         message: "Enter Anthropic API key",
         validate: validateApiKeyInput,
       });
-      await setAnthropicApiKey(normalizeApiKeyInput(String(key)), params.agentDir);
+      await writeApiKeyCredential({
+        providerId: "anthropic",
+        profileId: "anthropic:default",
+        key: normalizeApiKeyInput(String(key)),
+        agentDir: params.agentDir,
+      });
     }
     nextConfig = applyAuthProfileConfig(nextConfig, {
       profileId: "anthropic:default",

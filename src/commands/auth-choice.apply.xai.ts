@@ -10,7 +10,7 @@ import {
   applyAuthProfileConfig,
   applyXaiConfig,
   applyXaiProviderConfig,
-  setXaiApiKey,
+  writeApiKeyCredential,
   XAI_DEFAULT_MODEL_REF,
 } from "./onboard-auth.js";
 
@@ -36,7 +36,12 @@ export async function applyAuthChoiceXAI(
   let hasCredential = false;
   const optsKey = params.opts?.xaiApiKey?.trim();
   if (optsKey) {
-    setXaiApiKey(normalizeApiKeyInput(optsKey), params.agentDir);
+    await writeApiKeyCredential({
+      providerId: "xai",
+      profileId: "xai:default",
+      key: normalizeApiKeyInput(optsKey),
+      agentDir: params.agentDir,
+    });
     hasCredential = true;
   }
 
@@ -48,7 +53,12 @@ export async function applyAuthChoiceXAI(
         initialValue: true,
       });
       if (useExisting) {
-        setXaiApiKey(envKey.apiKey, params.agentDir);
+        await writeApiKeyCredential({
+          providerId: "xai",
+          profileId: "xai:default",
+          key: envKey.apiKey,
+          agentDir: params.agentDir,
+        });
         hasCredential = true;
       }
     }
@@ -59,7 +69,12 @@ export async function applyAuthChoiceXAI(
       message: "Enter xAI API key",
       validate: validateApiKeyInput,
     });
-    setXaiApiKey(normalizeApiKeyInput(String(key)), params.agentDir);
+    await writeApiKeyCredential({
+      providerId: "xai",
+      profileId: "xai:default",
+      key: normalizeApiKeyInput(String(key)),
+      agentDir: params.agentDir,
+    });
   }
 
   nextConfig = applyAuthProfileConfig(nextConfig, {
