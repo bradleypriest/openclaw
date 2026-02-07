@@ -108,6 +108,14 @@ export type ProviderAuthMethod = {
   label: string;
   hint?: string;
   kind: ProviderAuthKind;
+  authChoice?: string;
+  group?: string;
+  groupLabel?: string;
+  groupHint?: string;
+  envVars?: string[];
+  defaultModel?: string;
+  profileId?: string;
+  keyPrompt?: string;
   run: (ctx: ProviderAuthContext) => Promise<ProviderAuthResult>;
 };
 

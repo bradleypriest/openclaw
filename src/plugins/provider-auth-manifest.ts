@@ -3,8 +3,10 @@ import type {
   PluginManifestProviderAuthEntry,
   PluginManifestProviderAuthMethod,
 } from "./manifest.js";
+import type { ProviderAuthMethod, ProviderAuthKind } from "./types.js";
 import { normalizeProviderId } from "../agents/model-selection.js";
 import { loadPluginManifestRegistry, type PluginManifestRecord } from "./manifest-registry.js";
+import { resolvePluginProviderRegistrations } from "./providers.js";
 
 export const PLUGIN_AUTH_CHOICE_PREFIX = "plugin";
 
@@ -44,46 +46,121 @@ function resolveWorkspaceDir(params: {
 function buildAuthChoice(params: {
   pluginId: string;
   providerId: string;
-  auth: PluginManifestProviderAuthEntry;
+  method: PluginManifestProviderAuthMethod;
+  methodAuthChoice?: string;
+  manifestAuth?: PluginManifestProviderAuthEntry;
 }): string {
-  const explicit = normalizeOptionalString(params.auth.authChoice);
+  const explicit =
+    normalizeOptionalString(params.methodAuthChoice) ??
+    normalizeOptionalString(params.manifestAuth?.authChoice);
   if (explicit) {
     return explicit;
   }
-  return `${PLUGIN_AUTH_CHOICE_PREFIX}:${params.pluginId}:${params.providerId}:${params.auth.method}`;
+  return `${PLUGIN_AUTH_CHOICE_PREFIX}:${params.pluginId}:${params.providerId}:${params.method}`;
 }
 
-function buildSpec(params: {
-  plugin: PluginManifestRecord;
+function mapProviderAuthKind(kind: ProviderAuthKind): PluginManifestProviderAuthMethod {
+  if (kind === "api_key") {
+    return "api-key";
+  }
+  if (kind === "device_code") {
+    return "device-code";
+  }
+  return kind;
+}
+
+function resolveManifestProviderAuthEntry(params: {
+  plugin?: PluginManifestRecord;
+  providerId: string;
+  method: PluginManifestProviderAuthMethod;
+}): PluginManifestProviderAuthEntry | undefined {
+  const entries = params.plugin?.providerAuth;
+  if (!entries) {
+    return undefined;
+  }
+
+  for (const [rawProviderId, auth] of Object.entries(entries)) {
+    if (normalizeProviderId(rawProviderId) !== normalizeProviderId(params.providerId)) {
+      continue;
+    }
+    if (auth.method !== params.method) {
+      continue;
+    }
+    return auth;
+  }
+
+  return undefined;
+}
+
+function normalizeStringList(values: Array<string | undefined>): string[] {
+  return [...new Set(values.map((value) => value?.trim() ?? "").filter(Boolean))];
+}
+
+function buildSpecFromRegisteredMethod(params: {
+  pluginId: string;
   providerIdRaw: string;
-  auth: PluginManifestProviderAuthEntry;
+  providerLabel?: string;
+  method: ProviderAuthMethod;
+  manifestAuth?: PluginManifestProviderAuthEntry;
+  providerEnvVars?: string[];
 }): DeclarativeProviderAuthSpec {
   const providerId = normalizeProviderId(params.providerIdRaw);
-  const label = normalizeOptionalString(params.auth.label) ?? providerId;
-  const hint = normalizeOptionalString(params.auth.hint);
+  const method = mapProviderAuthKind(params.method.kind);
+  const label =
+    normalizeOptionalString(params.method.label) ??
+    normalizeOptionalString(params.manifestAuth?.label) ??
+    normalizeOptionalString(params.providerLabel) ??
+    providerId;
+  const hint =
+    normalizeOptionalString(params.method.hint) ??
+    normalizeOptionalString(params.manifestAuth?.hint);
   const groupId =
-    normalizeProviderId(normalizeOptionalString(params.auth.group) ?? providerId) || providerId;
-  const groupLabel = normalizeOptionalString(params.auth.groupLabel) ?? label;
-  const groupHint = normalizeOptionalString(params.auth.groupHint);
-  const profileId = normalizeOptionalString(params.auth.profileId) ?? `${providerId}:default`;
-  const keyPrompt = normalizeOptionalString(params.auth.keyPrompt) ?? `Enter ${label} API key`;
+    normalizeProviderId(
+      normalizeOptionalString(params.method.group) ??
+        normalizeOptionalString(params.manifestAuth?.group) ??
+        providerId,
+    ) || providerId;
+  const groupLabel =
+    normalizeOptionalString(params.method.groupLabel) ??
+    normalizeOptionalString(params.manifestAuth?.groupLabel) ??
+    normalizeOptionalString(params.providerLabel) ??
+    label;
+  const groupHint =
+    normalizeOptionalString(params.method.groupHint) ??
+    normalizeOptionalString(params.manifestAuth?.groupHint);
+  const profileId =
+    normalizeOptionalString(params.method.profileId) ??
+    normalizeOptionalString(params.manifestAuth?.profileId) ??
+    `${providerId}:default`;
+  const keyPrompt =
+    normalizeOptionalString(params.method.keyPrompt) ??
+    normalizeOptionalString(params.manifestAuth?.keyPrompt) ??
+    `Enter ${label} API key`;
 
   return {
-    pluginId: params.plugin.id,
+    pluginId: params.pluginId,
     providerId,
     authChoice: buildAuthChoice({
-      pluginId: params.plugin.id,
+      pluginId: params.pluginId,
       providerId,
-      auth: params.auth,
+      method,
+      methodAuthChoice: params.method.authChoice,
+      manifestAuth: params.manifestAuth,
     }),
-    method: params.auth.method,
+    method,
     label,
     hint,
     groupId,
     groupLabel,
     groupHint,
-    envVars: params.auth.envVars ?? [],
-    defaultModel: normalizeOptionalString(params.auth.defaultModel),
+    envVars: normalizeStringList([
+      ...(params.method.envVars ?? []),
+      ...(params.manifestAuth?.envVars ?? []),
+      ...(params.providerEnvVars ?? []),
+    ]),
+    defaultModel:
+      normalizeOptionalString(params.method.defaultModel) ??
+      normalizeOptionalString(params.manifestAuth?.defaultModel),
     profileId,
     keyPrompt,
   };
@@ -96,21 +173,38 @@ export function resolveDeclarativeProviderAuthSpecs(
     cache?: boolean;
   } = {},
 ): DeclarativeProviderAuthSpec[] {
+  const workspaceDir = resolveWorkspaceDir(params);
   const registry = loadPluginManifestRegistry({
     config: params.config,
-    workspaceDir: resolveWorkspaceDir(params),
+    workspaceDir,
     cache: params.cache,
+  });
+  const pluginById = new Map(registry.plugins.map((plugin) => [plugin.id, plugin]));
+  const registrations = resolvePluginProviderRegistrations({
+    config: params.config,
+    workspaceDir,
   });
   const specs: DeclarativeProviderAuthSpec[] = [];
   const seenChoices = new Set<string>();
 
-  for (const plugin of registry.plugins) {
-    const providerAuth = plugin.providerAuth;
-    if (!providerAuth) {
-      continue;
-    }
-    for (const [providerIdRaw, auth] of Object.entries(providerAuth)) {
-      const spec = buildSpec({ plugin, providerIdRaw, auth });
+  for (const registration of registrations) {
+    const plugin = pluginById.get(registration.pluginId);
+    const provider = registration.provider;
+    for (const method of provider.auth) {
+      const mappedMethod = mapProviderAuthKind(method.kind);
+      const manifestAuth = resolveManifestProviderAuthEntry({
+        plugin,
+        providerId: provider.id,
+        method: mappedMethod,
+      });
+      const spec = buildSpecFromRegisteredMethod({
+        pluginId: registration.pluginId,
+        providerIdRaw: provider.id,
+        providerLabel: provider.label,
+        method,
+        manifestAuth,
+        providerEnvVars: provider.envVars,
+      });
       if (seenChoices.has(spec.authChoice)) {
         continue;
       }

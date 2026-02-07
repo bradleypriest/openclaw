@@ -4,10 +4,15 @@ import { loadOpenClawPlugins, type PluginLoadOptions } from "./loader.js";
 
 const log = createSubsystemLogger("plugins");
 
-export function resolvePluginProviders(params: {
+export type ResolvedPluginProviderRegistration = {
+  pluginId: string;
+  provider: ProviderPlugin;
+};
+
+export function resolvePluginProviderRegistrations(params: {
   config?: PluginLoadOptions["config"];
   workspaceDir?: string;
-}): ProviderPlugin[] {
+}): ResolvedPluginProviderRegistration[] {
   const registry = loadOpenClawPlugins({
     config: params.config,
     workspaceDir: params.workspaceDir,
@@ -19,5 +24,15 @@ export function resolvePluginProviders(params: {
     },
   });
 
-  return registry.providers.map((entry) => entry.provider);
+  return registry.providers.map((entry) => ({
+    pluginId: entry.pluginId,
+    provider: entry.provider,
+  }));
+}
+
+export function resolvePluginProviders(params: {
+  config?: PluginLoadOptions["config"];
+  workspaceDir?: string;
+}): ProviderPlugin[] {
+  return resolvePluginProviderRegistrations(params).map((entry) => entry.provider);
 }
