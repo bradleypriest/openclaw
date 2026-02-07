@@ -45,20 +45,15 @@ import {
 } from "./onboard-auth.models.js";
 
 export function applyZaiConfig(cfg: OpenClawConfig): OpenClawConfig {
-  const models = { ...cfg.agents?.defaults?.models };
-  models[ZAI_DEFAULT_MODEL_REF] = {
-    ...models[ZAI_DEFAULT_MODEL_REF],
-    alias: models[ZAI_DEFAULT_MODEL_REF]?.alias ?? "GLM",
-  };
+  const next = applyZaiProviderConfig(cfg);
 
-  const existingModel = cfg.agents?.defaults?.model;
+  const existingModel = next.agents?.defaults?.model;
   return {
-    ...cfg,
+    ...next,
     agents: {
-      ...cfg.agents,
+      ...next.agents,
       defaults: {
-        ...cfg.agents?.defaults,
-        models,
+        ...next.agents?.defaults,
         model: {
           ...(existingModel && "fallbacks" in (existingModel as Record<string, unknown>)
             ? {
@@ -67,6 +62,25 @@ export function applyZaiConfig(cfg: OpenClawConfig): OpenClawConfig {
             : undefined),
           primary: ZAI_DEFAULT_MODEL_REF,
         },
+      },
+    },
+  };
+}
+
+export function applyZaiProviderConfig(cfg: OpenClawConfig): OpenClawConfig {
+  const models = { ...cfg.agents?.defaults?.models };
+  models[ZAI_DEFAULT_MODEL_REF] = {
+    ...models[ZAI_DEFAULT_MODEL_REF],
+    alias: models[ZAI_DEFAULT_MODEL_REF]?.alias ?? "GLM",
+  };
+
+  return {
+    ...cfg,
+    agents: {
+      ...cfg.agents,
+      defaults: {
+        ...cfg.agents?.defaults,
+        models,
       },
     },
   };

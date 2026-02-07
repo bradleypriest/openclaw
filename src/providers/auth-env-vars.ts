@@ -1,6 +1,9 @@
+import { getEnvApiKey } from "@mariozechner/pi-ai";
 import type { OpenClawConfig } from "../config/config.js";
 import { normalizeProviderId } from "../agents/model-selection.js";
 import { findDeclarativeProviderAuthByProvider } from "../plugins/provider-auth-manifest.js";
+
+export type ProviderEnvApiKey = { apiKey: string; source: string };
 
 const BUILTIN_PROVIDER_ENV_VAR_CANDIDATES: Record<string, string[]> = {
   "github-copilot": ["COPILOT_GITHUB_TOKEN", "GH_TOKEN", "GITHUB_TOKEN"],
@@ -54,4 +57,35 @@ export function resolveProviderEnvVarCandidates(
   }
 
   return [...new Set(candidates.map((value) => value.trim()).filter(Boolean))];
+}
+
+export function resolveProviderEnvApiKey(params: {
+  provider: string;
+  resolveEnvVar: (envVar: string) => ProviderEnvApiKey | null;
+  config?: OpenClawConfig;
+  workspaceDir?: string;
+  includeDeclarative?: boolean;
+}): ProviderEnvApiKey | null {
+  const normalized = normalizeProviderId(params.provider);
+
+  if (normalized === "google-vertex") {
+    const envKey = getEnvApiKey(normalized);
+    if (!envKey) {
+      return null;
+    }
+    return { apiKey: envKey, source: "gcloud adc" };
+  }
+
+  for (const envVar of resolveProviderEnvVarCandidates(normalized, {
+    config: params.config,
+    workspaceDir: params.workspaceDir,
+    includeDeclarative: params.includeDeclarative,
+  })) {
+    const resolved = params.resolveEnvVar(envVar);
+    if (resolved) {
+      return resolved;
+    }
+  }
+
+  return null;
 }
