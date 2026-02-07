@@ -29,20 +29,7 @@ import {
   applyXaiConfig,
   applyXiaomiConfig,
   applyZaiConfig,
-  setAnthropicApiKey,
-  setCloudflareAiGatewayConfig,
-  setGeminiApiKey,
-  setKimiCodingApiKey,
-  setMinimaxApiKey,
-  setMoonshotApiKey,
-  setOpencodeZenApiKey,
-  setOpenrouterApiKey,
-  setSyntheticApiKey,
-  setXaiApiKey,
-  setVeniceApiKey,
-  setVercelAiGatewayApiKey,
-  setXiaomiApiKey,
-  setZaiApiKey,
+  writeApiKeyCredential,
 } from "../../onboard-auth.js";
 import { applyOpenAIConfig } from "../../openai-model-default.js";
 import { resolveNonInteractiveApiKey } from "../api-keys.js";
@@ -197,6 +184,243 @@ async function applyDeclarativeNonInteractiveApiKeyAuth(params: {
   return nextConfig;
 }
 
+async function persistApiKeyProfile(params: {
+  providerId: string;
+  profileId: string;
+  key: string;
+  metadata?: Record<string, string | undefined>;
+}) {
+  await writeApiKeyCredential({
+    providerId: params.providerId,
+    profileId: params.profileId,
+    key: params.key,
+    metadata: params.metadata,
+  });
+}
+
+type BuiltinApiKeyAuthChoiceSpec = {
+  providerId: string;
+  profileId: string;
+  flagValue: (opts: OnboardOptions) => string | undefined;
+  flagName: string;
+  envVar: string;
+  applyConfig: (
+    config: OpenClawConfig,
+    authChoice: AuthChoice,
+    metadata?: Record<string, string>,
+  ) => OpenClawConfig;
+  resolveMetadata?: (opts: OnboardOptions, runtime: RuntimeEnv) => Record<string, string> | null;
+};
+
+const BUILTIN_API_KEY_AUTH_CHOICE_SPECS: Partial<Record<AuthChoice, BuiltinApiKeyAuthChoiceSpec>> =
+  {
+    "gemini-api-key": {
+      providerId: "google",
+      profileId: "google:default",
+      flagValue: (opts) => opts.geminiApiKey,
+      flagName: "--gemini-api-key",
+      envVar: "GEMINI_API_KEY",
+      applyConfig: (config) => applyGoogleGeminiModelDefault(config).next,
+    },
+    "zai-api-key": {
+      providerId: "zai",
+      profileId: "zai:default",
+      flagValue: (opts) => opts.zaiApiKey,
+      flagName: "--zai-api-key",
+      envVar: "ZAI_API_KEY",
+      applyConfig: (config) => applyZaiConfig(config),
+    },
+    "xiaomi-api-key": {
+      providerId: "xiaomi",
+      profileId: "xiaomi:default",
+      flagValue: (opts) => opts.xiaomiApiKey,
+      flagName: "--xiaomi-api-key",
+      envVar: "XIAOMI_API_KEY",
+      applyConfig: (config) => applyXiaomiConfig(config),
+    },
+    "xai-api-key": {
+      providerId: "xai",
+      profileId: "xai:default",
+      flagValue: (opts) => opts.xaiApiKey,
+      flagName: "--xai-api-key",
+      envVar: "XAI_API_KEY",
+      applyConfig: (config) => applyXaiConfig(config),
+    },
+    "openrouter-api-key": {
+      providerId: "openrouter",
+      profileId: "openrouter:default",
+      flagValue: (opts) => opts.openrouterApiKey,
+      flagName: "--openrouter-api-key",
+      envVar: "OPENROUTER_API_KEY",
+      applyConfig: (config) => applyOpenrouterConfig(config),
+    },
+    "ai-gateway-api-key": {
+      providerId: "vercel-ai-gateway",
+      profileId: "vercel-ai-gateway:default",
+      flagValue: (opts) => opts.aiGatewayApiKey,
+      flagName: "--ai-gateway-api-key",
+      envVar: "AI_GATEWAY_API_KEY",
+      applyConfig: (config) => applyVercelAiGatewayConfig(config),
+    },
+    "cloudflare-ai-gateway-api-key": {
+      providerId: "cloudflare-ai-gateway",
+      profileId: "cloudflare-ai-gateway:default",
+      flagValue: (opts) => opts.cloudflareAiGatewayApiKey,
+      flagName: "--cloudflare-ai-gateway-api-key",
+      envVar: "CLOUDFLARE_AI_GATEWAY_API_KEY",
+      applyConfig: (config, _authChoice, metadata) =>
+        applyCloudflareAiGatewayConfig(config, {
+          accountId: metadata?.accountId,
+          gatewayId: metadata?.gatewayId,
+        }),
+      resolveMetadata: (opts, runtime) => {
+        const accountId = opts.cloudflareAiGatewayAccountId?.trim() ?? "";
+        const gatewayId = opts.cloudflareAiGatewayGatewayId?.trim() ?? "";
+        if (!accountId || !gatewayId) {
+          runtime.error(
+            [
+              'Auth choice "cloudflare-ai-gateway-api-key" requires Account ID and Gateway ID.',
+              "Use --cloudflare-ai-gateway-account-id and --cloudflare-ai-gateway-gateway-id.",
+            ].join("\n"),
+          );
+          runtime.exit(1);
+          return null;
+        }
+        return { accountId, gatewayId };
+      },
+    },
+    "moonshot-api-key": {
+      providerId: "moonshot",
+      profileId: "moonshot:default",
+      flagValue: (opts) => opts.moonshotApiKey,
+      flagName: "--moonshot-api-key",
+      envVar: "MOONSHOT_API_KEY",
+      applyConfig: (config) => applyMoonshotConfig(config),
+    },
+    "moonshot-api-key-cn": {
+      providerId: "moonshot",
+      profileId: "moonshot:default",
+      flagValue: (opts) => opts.moonshotApiKey,
+      flagName: "--moonshot-api-key",
+      envVar: "MOONSHOT_API_KEY",
+      applyConfig: (config) => applyMoonshotConfigCn(config),
+    },
+    "kimi-code-api-key": {
+      providerId: "kimi-coding",
+      profileId: "kimi-coding:default",
+      flagValue: (opts) => opts.kimiCodeApiKey,
+      flagName: "--kimi-code-api-key",
+      envVar: "KIMI_API_KEY",
+      applyConfig: (config) => applyKimiCodeConfig(config),
+    },
+    "synthetic-api-key": {
+      providerId: "synthetic",
+      profileId: "synthetic:default",
+      flagValue: (opts) => opts.syntheticApiKey,
+      flagName: "--synthetic-api-key",
+      envVar: "SYNTHETIC_API_KEY",
+      applyConfig: (config) => applySyntheticConfig(config),
+    },
+    "venice-api-key": {
+      providerId: "venice",
+      profileId: "venice:default",
+      flagValue: (opts) => opts.veniceApiKey,
+      flagName: "--venice-api-key",
+      envVar: "VENICE_API_KEY",
+      applyConfig: (config) => applyVeniceConfig(config),
+    },
+    "minimax-cloud": {
+      providerId: "minimax",
+      profileId: "minimax:default",
+      flagValue: (opts) => opts.minimaxApiKey,
+      flagName: "--minimax-api-key",
+      envVar: "MINIMAX_API_KEY",
+      applyConfig: (config, authChoice) => {
+        const modelId =
+          authChoice === "minimax-api-lightning" ? "MiniMax-M2.1-lightning" : "MiniMax-M2.1";
+        return applyMinimaxApiConfig(config, modelId);
+      },
+    },
+    "minimax-api": {
+      providerId: "minimax",
+      profileId: "minimax:default",
+      flagValue: (opts) => opts.minimaxApiKey,
+      flagName: "--minimax-api-key",
+      envVar: "MINIMAX_API_KEY",
+      applyConfig: (config, authChoice) => {
+        const modelId =
+          authChoice === "minimax-api-lightning" ? "MiniMax-M2.1-lightning" : "MiniMax-M2.1";
+        return applyMinimaxApiConfig(config, modelId);
+      },
+    },
+    "minimax-api-lightning": {
+      providerId: "minimax",
+      profileId: "minimax:default",
+      flagValue: (opts) => opts.minimaxApiKey,
+      flagName: "--minimax-api-key",
+      envVar: "MINIMAX_API_KEY",
+      applyConfig: (config, authChoice) => {
+        const modelId =
+          authChoice === "minimax-api-lightning" ? "MiniMax-M2.1-lightning" : "MiniMax-M2.1";
+        return applyMinimaxApiConfig(config, modelId);
+      },
+    },
+    "opencode-zen": {
+      providerId: "opencode",
+      profileId: "opencode:default",
+      flagValue: (opts) => opts.opencodeZenApiKey,
+      flagName: "--opencode-zen-api-key",
+      envVar: "OPENCODE_API_KEY (or OPENCODE_ZEN_API_KEY)",
+      applyConfig: (config) => applyOpencodeZenConfig(config),
+    },
+  };
+
+async function applyBuiltinNonInteractiveApiKeyChoice(params: {
+  authChoice: AuthChoice;
+  opts: OnboardOptions;
+  runtime: RuntimeEnv;
+  baseConfig: OpenClawConfig;
+  nextConfig: OpenClawConfig;
+}): Promise<OpenClawConfig | null | undefined> {
+  const spec = BUILTIN_API_KEY_AUTH_CHOICE_SPECS[params.authChoice];
+  if (!spec) {
+    return undefined;
+  }
+
+  const metadata = spec.resolveMetadata?.(params.opts, params.runtime);
+  if (metadata === null) {
+    return null;
+  }
+
+  const resolved = await resolveNonInteractiveApiKey({
+    provider: spec.providerId,
+    cfg: params.baseConfig,
+    flagValue: spec.flagValue(params.opts),
+    flagName: spec.flagName,
+    envVar: spec.envVar,
+    runtime: params.runtime,
+  });
+  if (!resolved) {
+    return null;
+  }
+
+  if (resolved.source !== "profile") {
+    await persistApiKeyProfile({
+      providerId: spec.providerId,
+      profileId: spec.profileId,
+      key: resolved.key,
+      metadata,
+    });
+  }
+
+  const nextConfig = applyAuthProfileConfig(params.nextConfig, {
+    profileId: spec.profileId,
+    provider: spec.providerId,
+    mode: "api_key",
+  });
+  return spec.applyConfig(nextConfig, params.authChoice, metadata ?? undefined);
+}
+
 export async function applyNonInteractiveAuthChoice(params: {
   nextConfig: OpenClawConfig;
   authChoice: AuthChoice;
@@ -278,7 +502,11 @@ export async function applyNonInteractiveAuthChoice(params: {
       return null;
     }
     if (resolved.source !== "profile") {
-      await setAnthropicApiKey(resolved.key);
+      await persistApiKeyProfile({
+        providerId: "anthropic",
+        profileId: "anthropic:default",
+        key: resolved.key,
+      });
     }
     return applyAuthProfileConfig(nextConfig, {
       profileId: "anthropic:default",
@@ -342,96 +570,15 @@ export async function applyNonInteractiveAuthChoice(params: {
     });
   }
 
-  if (authChoice === "gemini-api-key") {
-    const resolved = await resolveNonInteractiveApiKey({
-      provider: "google",
-      cfg: baseConfig,
-      flagValue: opts.geminiApiKey,
-      flagName: "--gemini-api-key",
-      envVar: "GEMINI_API_KEY",
-      runtime,
-    });
-    if (!resolved) {
-      return null;
-    }
-    if (resolved.source !== "profile") {
-      await setGeminiApiKey(resolved.key);
-    }
-    nextConfig = applyAuthProfileConfig(nextConfig, {
-      profileId: "google:default",
-      provider: "google",
-      mode: "api_key",
-    });
-    return applyGoogleGeminiModelDefault(nextConfig).next;
-  }
-
-  if (authChoice === "zai-api-key") {
-    const resolved = await resolveNonInteractiveApiKey({
-      provider: "zai",
-      cfg: baseConfig,
-      flagValue: opts.zaiApiKey,
-      flagName: "--zai-api-key",
-      envVar: "ZAI_API_KEY",
-      runtime,
-    });
-    if (!resolved) {
-      return null;
-    }
-    if (resolved.source !== "profile") {
-      await setZaiApiKey(resolved.key);
-    }
-    nextConfig = applyAuthProfileConfig(nextConfig, {
-      profileId: "zai:default",
-      provider: "zai",
-      mode: "api_key",
-    });
-    return applyZaiConfig(nextConfig);
-  }
-
-  if (authChoice === "xiaomi-api-key") {
-    const resolved = await resolveNonInteractiveApiKey({
-      provider: "xiaomi",
-      cfg: baseConfig,
-      flagValue: opts.xiaomiApiKey,
-      flagName: "--xiaomi-api-key",
-      envVar: "XIAOMI_API_KEY",
-      runtime,
-    });
-    if (!resolved) {
-      return null;
-    }
-    if (resolved.source !== "profile") {
-      await setXiaomiApiKey(resolved.key);
-    }
-    nextConfig = applyAuthProfileConfig(nextConfig, {
-      profileId: "xiaomi:default",
-      provider: "xiaomi",
-      mode: "api_key",
-    });
-    return applyXiaomiConfig(nextConfig);
-  }
-
-  if (authChoice === "xai-api-key") {
-    const resolved = await resolveNonInteractiveApiKey({
-      provider: "xai",
-      cfg: baseConfig,
-      flagValue: opts.xaiApiKey,
-      flagName: "--xai-api-key",
-      envVar: "XAI_API_KEY",
-      runtime,
-    });
-    if (!resolved) {
-      return null;
-    }
-    if (resolved.source !== "profile") {
-      setXaiApiKey(resolved.key);
-    }
-    nextConfig = applyAuthProfileConfig(nextConfig, {
-      profileId: "xai:default",
-      provider: "xai",
-      mode: "api_key",
-    });
-    return applyXaiConfig(nextConfig);
+  const appliedBuiltin = await applyBuiltinNonInteractiveApiKeyChoice({
+    authChoice,
+    opts,
+    runtime,
+    baseConfig,
+    nextConfig,
+  });
+  if (appliedBuiltin !== undefined) {
+    return appliedBuiltin;
   }
 
   if (authChoice === "openai-api-key") {
@@ -454,259 +601,8 @@ export async function applyNonInteractiveAuthChoice(params: {
     return applyOpenAIConfig(nextConfig);
   }
 
-  if (authChoice === "openrouter-api-key") {
-    const resolved = await resolveNonInteractiveApiKey({
-      provider: "openrouter",
-      cfg: baseConfig,
-      flagValue: opts.openrouterApiKey,
-      flagName: "--openrouter-api-key",
-      envVar: "OPENROUTER_API_KEY",
-      runtime,
-    });
-    if (!resolved) {
-      return null;
-    }
-    if (resolved.source !== "profile") {
-      await setOpenrouterApiKey(resolved.key);
-    }
-    nextConfig = applyAuthProfileConfig(nextConfig, {
-      profileId: "openrouter:default",
-      provider: "openrouter",
-      mode: "api_key",
-    });
-    return applyOpenrouterConfig(nextConfig);
-  }
-
-  if (authChoice === "ai-gateway-api-key") {
-    const resolved = await resolveNonInteractiveApiKey({
-      provider: "vercel-ai-gateway",
-      cfg: baseConfig,
-      flagValue: opts.aiGatewayApiKey,
-      flagName: "--ai-gateway-api-key",
-      envVar: "AI_GATEWAY_API_KEY",
-      runtime,
-    });
-    if (!resolved) {
-      return null;
-    }
-    if (resolved.source !== "profile") {
-      await setVercelAiGatewayApiKey(resolved.key);
-    }
-    nextConfig = applyAuthProfileConfig(nextConfig, {
-      profileId: "vercel-ai-gateway:default",
-      provider: "vercel-ai-gateway",
-      mode: "api_key",
-    });
-    return applyVercelAiGatewayConfig(nextConfig);
-  }
-
-  if (authChoice === "cloudflare-ai-gateway-api-key") {
-    const accountId = opts.cloudflareAiGatewayAccountId?.trim() ?? "";
-    const gatewayId = opts.cloudflareAiGatewayGatewayId?.trim() ?? "";
-    if (!accountId || !gatewayId) {
-      runtime.error(
-        [
-          'Auth choice "cloudflare-ai-gateway-api-key" requires Account ID and Gateway ID.',
-          "Use --cloudflare-ai-gateway-account-id and --cloudflare-ai-gateway-gateway-id.",
-        ].join("\n"),
-      );
-      runtime.exit(1);
-      return null;
-    }
-    const resolved = await resolveNonInteractiveApiKey({
-      provider: "cloudflare-ai-gateway",
-      cfg: baseConfig,
-      flagValue: opts.cloudflareAiGatewayApiKey,
-      flagName: "--cloudflare-ai-gateway-api-key",
-      envVar: "CLOUDFLARE_AI_GATEWAY_API_KEY",
-      runtime,
-    });
-    if (!resolved) {
-      return null;
-    }
-    if (resolved.source !== "profile") {
-      await setCloudflareAiGatewayConfig(accountId, gatewayId, resolved.key);
-    }
-    nextConfig = applyAuthProfileConfig(nextConfig, {
-      profileId: "cloudflare-ai-gateway:default",
-      provider: "cloudflare-ai-gateway",
-      mode: "api_key",
-    });
-    return applyCloudflareAiGatewayConfig(nextConfig, {
-      accountId,
-      gatewayId,
-    });
-  }
-
-  if (authChoice === "moonshot-api-key") {
-    const resolved = await resolveNonInteractiveApiKey({
-      provider: "moonshot",
-      cfg: baseConfig,
-      flagValue: opts.moonshotApiKey,
-      flagName: "--moonshot-api-key",
-      envVar: "MOONSHOT_API_KEY",
-      runtime,
-    });
-    if (!resolved) {
-      return null;
-    }
-    if (resolved.source !== "profile") {
-      await setMoonshotApiKey(resolved.key);
-    }
-    nextConfig = applyAuthProfileConfig(nextConfig, {
-      profileId: "moonshot:default",
-      provider: "moonshot",
-      mode: "api_key",
-    });
-    return applyMoonshotConfig(nextConfig);
-  }
-
-  if (authChoice === "moonshot-api-key-cn") {
-    const resolved = await resolveNonInteractiveApiKey({
-      provider: "moonshot",
-      cfg: baseConfig,
-      flagValue: opts.moonshotApiKey,
-      flagName: "--moonshot-api-key",
-      envVar: "MOONSHOT_API_KEY",
-      runtime,
-    });
-    if (!resolved) {
-      return null;
-    }
-    if (resolved.source !== "profile") {
-      await setMoonshotApiKey(resolved.key);
-    }
-    nextConfig = applyAuthProfileConfig(nextConfig, {
-      profileId: "moonshot:default",
-      provider: "moonshot",
-      mode: "api_key",
-    });
-    return applyMoonshotConfigCn(nextConfig);
-  }
-
-  if (authChoice === "kimi-code-api-key") {
-    const resolved = await resolveNonInteractiveApiKey({
-      provider: "kimi-coding",
-      cfg: baseConfig,
-      flagValue: opts.kimiCodeApiKey,
-      flagName: "--kimi-code-api-key",
-      envVar: "KIMI_API_KEY",
-      runtime,
-    });
-    if (!resolved) {
-      return null;
-    }
-    if (resolved.source !== "profile") {
-      await setKimiCodingApiKey(resolved.key);
-    }
-    nextConfig = applyAuthProfileConfig(nextConfig, {
-      profileId: "kimi-coding:default",
-      provider: "kimi-coding",
-      mode: "api_key",
-    });
-    return applyKimiCodeConfig(nextConfig);
-  }
-
-  if (authChoice === "synthetic-api-key") {
-    const resolved = await resolveNonInteractiveApiKey({
-      provider: "synthetic",
-      cfg: baseConfig,
-      flagValue: opts.syntheticApiKey,
-      flagName: "--synthetic-api-key",
-      envVar: "SYNTHETIC_API_KEY",
-      runtime,
-    });
-    if (!resolved) {
-      return null;
-    }
-    if (resolved.source !== "profile") {
-      await setSyntheticApiKey(resolved.key);
-    }
-    nextConfig = applyAuthProfileConfig(nextConfig, {
-      profileId: "synthetic:default",
-      provider: "synthetic",
-      mode: "api_key",
-    });
-    return applySyntheticConfig(nextConfig);
-  }
-
-  if (authChoice === "venice-api-key") {
-    const resolved = await resolveNonInteractiveApiKey({
-      provider: "venice",
-      cfg: baseConfig,
-      flagValue: opts.veniceApiKey,
-      flagName: "--venice-api-key",
-      envVar: "VENICE_API_KEY",
-      runtime,
-    });
-    if (!resolved) {
-      return null;
-    }
-    if (resolved.source !== "profile") {
-      await setVeniceApiKey(resolved.key);
-    }
-    nextConfig = applyAuthProfileConfig(nextConfig, {
-      profileId: "venice:default",
-      provider: "venice",
-      mode: "api_key",
-    });
-    return applyVeniceConfig(nextConfig);
-  }
-
-  if (
-    authChoice === "minimax-cloud" ||
-    authChoice === "minimax-api" ||
-    authChoice === "minimax-api-lightning"
-  ) {
-    const resolved = await resolveNonInteractiveApiKey({
-      provider: "minimax",
-      cfg: baseConfig,
-      flagValue: opts.minimaxApiKey,
-      flagName: "--minimax-api-key",
-      envVar: "MINIMAX_API_KEY",
-      runtime,
-    });
-    if (!resolved) {
-      return null;
-    }
-    if (resolved.source !== "profile") {
-      await setMinimaxApiKey(resolved.key);
-    }
-    nextConfig = applyAuthProfileConfig(nextConfig, {
-      profileId: "minimax:default",
-      provider: "minimax",
-      mode: "api_key",
-    });
-    const modelId =
-      authChoice === "minimax-api-lightning" ? "MiniMax-M2.1-lightning" : "MiniMax-M2.1";
-    return applyMinimaxApiConfig(nextConfig, modelId);
-  }
-
   if (authChoice === "minimax") {
     return applyMinimaxConfig(nextConfig);
-  }
-
-  if (authChoice === "opencode-zen") {
-    const resolved = await resolveNonInteractiveApiKey({
-      provider: "opencode",
-      cfg: baseConfig,
-      flagValue: opts.opencodeZenApiKey,
-      flagName: "--opencode-zen-api-key",
-      envVar: "OPENCODE_API_KEY (or OPENCODE_ZEN_API_KEY)",
-      runtime,
-    });
-    if (!resolved) {
-      return null;
-    }
-    if (resolved.source !== "profile") {
-      await setOpencodeZenApiKey(resolved.key);
-    }
-    nextConfig = applyAuthProfileConfig(nextConfig, {
-      profileId: "opencode:default",
-      provider: "opencode",
-      mode: "api_key",
-    });
-    return applyOpencodeZenConfig(nextConfig);
   }
 
   const declarativeChoice = findDeclarativeProviderAuthByChoice(authChoice, {

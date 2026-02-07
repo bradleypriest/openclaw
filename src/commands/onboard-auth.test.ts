@@ -21,7 +21,7 @@ import {
   SYNTHETIC_DEFAULT_MODEL_ID,
   SYNTHETIC_DEFAULT_MODEL_REF,
   XAI_DEFAULT_MODEL_REF,
-  setMinimaxApiKey,
+  writeApiKeyCredential,
   writeOAuthCredentials,
 } from "./onboard-auth.js";
 
@@ -94,7 +94,7 @@ describe("writeOAuthCredentials", () => {
   });
 });
 
-describe("setMinimaxApiKey", () => {
+describe("writeApiKeyCredential", () => {
   const previousStateDir = process.env.OPENCLAW_STATE_DIR;
   const previousAgentDir = process.env.OPENCLAW_AGENT_DIR;
   const previousPiAgentDir = process.env.PI_CODING_AGENT_DIR;
@@ -128,7 +128,11 @@ describe("setMinimaxApiKey", () => {
     process.env.OPENCLAW_AGENT_DIR = path.join(tempStateDir, "custom-agent");
     process.env.PI_CODING_AGENT_DIR = process.env.OPENCLAW_AGENT_DIR;
 
-    await setMinimaxApiKey("sk-minimax-test");
+    await writeApiKeyCredential({
+      providerId: "minimax",
+      profileId: "minimax:default",
+      key: "sk-minimax-test",
+    });
 
     const customAuthPath = authProfilePathFor(requireAgentDir());
     const raw = await fs.readFile(customAuthPath, "utf8");

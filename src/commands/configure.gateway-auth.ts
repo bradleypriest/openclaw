@@ -50,6 +50,8 @@ export async function promptAuthConfig(
       allowKeychainPrompt: false,
     }),
     includeSkip: true,
+    config: cfg,
+    workspaceDir: cfg.agents?.defaults?.workspace,
   });
 
   let next = cfg;
