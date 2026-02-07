@@ -6,6 +6,27 @@ import { MANIFEST_KEY } from "../compat/legacy-names.js";
 export const PLUGIN_MANIFEST_FILENAME = "openclaw.plugin.json";
 export const PLUGIN_MANIFEST_FILENAMES = [PLUGIN_MANIFEST_FILENAME] as const;
 
+export type PluginManifestProviderAuthMethod =
+  | "api-key"
+  | "oauth"
+  | "token"
+  | "device-code"
+  | "custom";
+
+export type PluginManifestProviderAuthEntry = {
+  method: PluginManifestProviderAuthMethod;
+  authChoice?: string;
+  label?: string;
+  hint?: string;
+  group?: string;
+  groupLabel?: string;
+  groupHint?: string;
+  envVars?: string[];
+  defaultModel?: string;
+  profileId?: string;
+  keyPrompt?: string;
+};
+
 export type PluginManifest = {
   id: string;
   configSchema: Record<string, unknown>;
@@ -17,6 +38,7 @@ export type PluginManifest = {
   description?: string;
   version?: string;
   uiHints?: Record<string, PluginConfigUiHint>;
+  providerAuth?: Record<string, PluginManifestProviderAuthEntry>;
 };
 
 export type PluginManifestLoadResult =
@@ -32,6 +54,70 @@ function normalizeStringList(value: unknown): string[] {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+const PROVIDER_AUTH_METHODS: PluginManifestProviderAuthMethod[] = [
+  "api-key",
+  "oauth",
+  "token",
+  "device-code",
+  "custom",
+];
+
+function normalizeOptionalString(value: unknown): string | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  return trimmed ? trimmed : undefined;
+}
+
+function normalizeProviderAuth(
+  raw: unknown,
+):
+  | { ok: true; value: Record<string, PluginManifestProviderAuthEntry> }
+  | { ok: false; error: string } {
+  if (!isRecord(raw)) {
+    return { ok: true, value: {} };
+  }
+
+  const entries: Record<string, PluginManifestProviderAuthEntry> = {};
+  for (const [providerIdRaw, authRaw] of Object.entries(raw)) {
+    const providerId = providerIdRaw.trim();
+    if (!providerId) {
+      return { ok: false, error: "providerAuth keys must be non-empty provider ids" };
+    }
+    if (!isRecord(authRaw)) {
+      return { ok: false, error: `providerAuth.${providerId} must be an object` };
+    }
+
+    const methodRaw = normalizeOptionalString(authRaw.method);
+    if (!methodRaw) {
+      return { ok: false, error: `providerAuth.${providerId}.method is required` };
+    }
+    if (!PROVIDER_AUTH_METHODS.includes(methodRaw as PluginManifestProviderAuthMethod)) {
+      return {
+        ok: false,
+        error: `providerAuth.${providerId}.method must be one of: ${PROVIDER_AUTH_METHODS.join(", ")}`,
+      };
+    }
+
+    entries[providerId] = {
+      method: methodRaw as PluginManifestProviderAuthMethod,
+      authChoice: normalizeOptionalString(authRaw.authChoice),
+      label: normalizeOptionalString(authRaw.label),
+      hint: normalizeOptionalString(authRaw.hint),
+      group: normalizeOptionalString(authRaw.group),
+      groupLabel: normalizeOptionalString(authRaw.groupLabel),
+      groupHint: normalizeOptionalString(authRaw.groupHint),
+      envVars: normalizeStringList(authRaw.envVars),
+      defaultModel: normalizeOptionalString(authRaw.defaultModel),
+      profileId: normalizeOptionalString(authRaw.profileId),
+      keyPrompt: normalizeOptionalString(authRaw.keyPrompt),
+    };
+  }
+
+  return { ok: true, value: entries };
 }
 
 export function resolvePluginManifestPath(rootDir: string): string {
@@ -78,6 +164,10 @@ export function loadPluginManifest(rootDir: string): PluginManifestLoadResult {
   const channels = normalizeStringList(raw.channels);
   const providers = normalizeStringList(raw.providers);
   const skills = normalizeStringList(raw.skills);
+  const providerAuth = normalizeProviderAuth(raw.providerAuth);
+  if (!providerAuth.ok) {
+    return { ok: false, error: providerAuth.error, manifestPath };
+  }
 
   let uiHints: Record<string, PluginConfigUiHint> | undefined;
   if (isRecord(raw.uiHints)) {
@@ -97,6 +187,7 @@ export function loadPluginManifest(rootDir: string): PluginManifestLoadResult {
       description,
       version,
       uiHints,
+      providerAuth: providerAuth.value,
     },
     manifestPath,
   };
