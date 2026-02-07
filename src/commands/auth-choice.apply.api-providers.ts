@@ -41,6 +41,7 @@ import {
   applyXiaomiConfig,
   applyXiaomiProviderConfig,
   applyZaiConfig,
+  applyZaiProviderConfig,
   CLOUDFLARE_AI_GATEWAY_DEFAULT_MODEL_REF,
   KIMI_CODING_MODEL_REF,
   MOONSHOT_DEFAULT_MODEL_REF,
@@ -88,25 +89,6 @@ function applyDefaultModelConfig(cfg: OpenClawConfig, modelRef: string): OpenCla
               }
             : undefined),
           primary: modelRef,
-        },
-      },
-    },
-  };
-}
-
-function applyZaiProviderAliasConfig(config: OpenClawConfig): OpenClawConfig {
-  return {
-    ...config,
-    agents: {
-      ...config.agents,
-      defaults: {
-        ...config.agents?.defaults,
-        models: {
-          ...config.agents?.defaults?.models,
-          [ZAI_DEFAULT_MODEL_REF]: {
-            ...config.agents?.defaults?.models?.[ZAI_DEFAULT_MODEL_REF],
-            alias: config.agents?.defaults?.models?.[ZAI_DEFAULT_MODEL_REF]?.alias ?? "GLM",
-          },
         },
       },
     },
@@ -303,7 +285,7 @@ const BUILTIN_DECLARATIVE_API_PROVIDER_SPECS: BuiltinDeclarativeApiProviderSpec[
       defaultModel: ZAI_DEFAULT_MODEL_REF,
       noteDefault: ZAI_DEFAULT_MODEL_REF,
       applyDefaultConfig: applyZaiConfig,
-      applyProviderConfig: applyZaiProviderAliasConfig,
+      applyProviderConfig: applyZaiProviderConfig,
     },
   },
   {

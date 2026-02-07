@@ -1,10 +1,10 @@
-import { type Api, getEnvApiKey, type Model } from "@mariozechner/pi-ai";
+import { type Api, type Model } from "@mariozechner/pi-ai";
 import path from "node:path";
 import type { OpenClawConfig } from "../config/config.js";
 import type { ModelProviderAuthMode, ModelProviderConfig } from "../config/types.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import { getShellEnvAppliedKeys } from "../infra/shell-env.js";
-import { resolveProviderEnvVarCandidates } from "../providers/auth-env-vars.js";
+import { resolveProviderEnvApiKey } from "../providers/auth-env-vars.js";
 import {
   type AuthProfileStore,
   ensureAuthProfileStore,
@@ -245,22 +245,10 @@ export function resolveEnvApiKey(provider: string): EnvApiKeyResult | null {
     return { apiKey: value, source };
   };
 
-  if (normalized === "google-vertex") {
-    const envKey = getEnvApiKey(normalized);
-    if (!envKey) {
-      return null;
-    }
-    return { apiKey: envKey, source: "gcloud adc" };
-  }
-
-  for (const envVar of resolveProviderEnvVarCandidates(normalized)) {
-    const resolved = pick(envVar);
-    if (resolved) {
-      return resolved;
-    }
-  }
-
-  return null;
+  return resolveProviderEnvApiKey({
+    provider: normalized,
+    resolveEnvVar: pick,
+  });
 }
 
 export function resolveModelAuthMode(

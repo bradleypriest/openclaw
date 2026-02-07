@@ -24,6 +24,7 @@ export {
   applyXiaomiConfig,
   applyXiaomiProviderConfig,
   applyZaiConfig,
+  applyZaiProviderConfig,
   applyXaiConfig,
   applyXaiProviderConfig,
 } from "./onboard-auth.config-core.js";
