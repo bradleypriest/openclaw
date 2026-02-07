@@ -1,12 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const loadPluginManifestRegistry = vi.hoisted(() =>
-  vi.fn<() => { plugins: Array<Record<string, unknown>>; diagnostics: unknown[] }>(() => ({
-    plugins: [],
-    diagnostics: [],
-  })),
-);
-
 const resolvePluginProviderRegistrations = vi.hoisted(() =>
   vi.fn<
     () => Array<{
@@ -16,10 +9,6 @@ const resolvePluginProviderRegistrations = vi.hoisted(() =>
   >(() => []),
 );
 
-vi.mock("./manifest-registry.js", () => ({
-  loadPluginManifestRegistry,
-}));
-
 vi.mock("./providers.js", () => ({
   resolvePluginProviderRegistrations,
 }));
@@ -27,32 +16,11 @@ vi.mock("./providers.js", () => ({
 describe("provider-auth-manifest", () => {
   afterEach(() => {
     vi.resetModules();
-    loadPluginManifestRegistry.mockReset();
-    loadPluginManifestRegistry.mockReturnValue({ plugins: [], diagnostics: [] });
     resolvePluginProviderRegistrations.mockReset();
     resolvePluginProviderRegistrations.mockReturnValue([]);
   });
 
-  it("derives declarative API-key auth specs from plugin manifests", async () => {
-    loadPluginManifestRegistry.mockReturnValue({
-      plugins: [
-        {
-          id: "xai-provider",
-          providerAuth: {
-            xai: {
-              method: "api-key",
-              label: "xAI (Grok)",
-              hint: "API key",
-              envVars: ["XAI_API_KEY"],
-              defaultModel: "xai/grok-2-latest",
-              profileId: "xai:default",
-              keyPrompt: "Enter xAI API key",
-            },
-          },
-        },
-      ],
-      diagnostics: [],
-    });
+  it("derives declarative auth specs from registered provider methods", async () => {
     resolvePluginProviderRegistrations.mockReturnValue([
       {
         pluginId: "xai-provider",
@@ -63,6 +31,13 @@ describe("provider-auth-manifest", () => {
             {
               id: "api-key",
               label: "xAI (Grok)",
+              hint: "API key",
+              envVars: ["XAI_API_KEY"],
+              defaultModel: "xai/grok-2-latest",
+              profileId: "xai:default",
+              keyPrompt: "Enter xAI API key",
+              group: "xai",
+              groupLabel: "xAI (Grok)",
               kind: "api_key",
               run: vi.fn(),
             },
@@ -90,47 +65,7 @@ describe("provider-auth-manifest", () => {
     });
   });
 
-  it("does not create auth specs from manifest-only providerAuth entries", async () => {
-    loadPluginManifestRegistry.mockReturnValue({
-      plugins: [
-        {
-          id: "manifest-only-provider",
-          providerAuth: {
-            xai: {
-              method: "api-key",
-              label: "xAI (Grok)",
-              envVars: ["XAI_API_KEY"],
-            },
-          },
-        },
-      ],
-      diagnostics: [],
-    });
-    resolvePluginProviderRegistrations.mockReturnValue([]);
-
-    vi.resetModules();
-    const { resolveDeclarativeProviderAuthSpecs } = await import("./provider-auth-manifest.js");
-    const specs = resolveDeclarativeProviderAuthSpecs();
-
-    expect(specs).toHaveLength(0);
-  });
-
   it("matches providers by normalized token-provider id", async () => {
-    loadPluginManifestRegistry.mockReturnValue({
-      plugins: [
-        {
-          id: "zai-provider",
-          providerAuth: {
-            zai: {
-              method: "api-key",
-              authChoice: "plugin:zai-provider:zai:api-key",
-              label: "Z.AI",
-            },
-          },
-        },
-      ],
-      diagnostics: [],
-    });
     resolvePluginProviderRegistrations.mockReturnValue([
       {
         pluginId: "zai-provider",
