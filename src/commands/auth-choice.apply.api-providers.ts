@@ -8,6 +8,9 @@ import {
   findDeclarativeProviderAuthByChoice,
   findDeclarativeProviderAuthByTokenProvider,
 } from "../plugins/provider-auth-manifest.js";
+import { ensureBuiltinProviderSetupHooksRegistered } from "../providers/builtin/setup-hooks.js";
+import { ZAI_PROVIDER_CONFIG_HOOK_ID } from "../providers/builtin/zai/setup.js";
+import { applyProviderSetupHook } from "../providers/setup-hooks.js";
 import {
   formatApiKeyPreview,
   normalizeApiKeyInput,
@@ -41,7 +44,6 @@ import {
   applyXiaomiConfig,
   applyXiaomiProviderConfig,
   applyZaiConfig,
-  applyZaiProviderConfig,
   CLOUDFLARE_AI_GATEWAY_DEFAULT_MODEL_REF,
   KIMI_CODING_MODEL_REF,
   MOONSHOT_DEFAULT_MODEL_REF,
@@ -93,6 +95,15 @@ function applyDefaultModelConfig(cfg: OpenClawConfig, modelRef: string): OpenCla
       },
     },
   };
+}
+
+function applyBuiltinSetupHookById(
+  hookId: string,
+  config: OpenClawConfig,
+  context?: BuiltinProviderContext,
+): OpenClawConfig {
+  ensureBuiltinProviderSetupHooksRegistered();
+  return applyProviderSetupHook(hookId, config, context);
 }
 
 type BuiltinProviderContext = {
@@ -285,7 +296,8 @@ const BUILTIN_DECLARATIVE_API_PROVIDER_SPECS: BuiltinDeclarativeApiProviderSpec[
       defaultModel: ZAI_DEFAULT_MODEL_REF,
       noteDefault: ZAI_DEFAULT_MODEL_REF,
       applyDefaultConfig: applyZaiConfig,
-      applyProviderConfig: applyZaiProviderConfig,
+      applyProviderConfig: (config, context) =>
+        applyBuiltinSetupHookById(ZAI_PROVIDER_CONFIG_HOOK_ID, config, context),
     },
   },
   {

@@ -150,6 +150,19 @@ Built in providers use declarative spec maps consumed by shared pipelines.
 - Non interactive apply path uses shared built in API key spec handling.
 - Special cases remain narrow hooks, for example Cloudflare Account ID and Gateway ID context.
 
+### Built in provider modules and hooks
+
+Provider specific setup behavior should live in provider modules under `src/providers/builtin/`.
+
+- Setup hooks are registered via `registerProviderSetupHook(...)`.
+- Built in hook registration is initialized by `ensureBuiltinProviderSetupHooksRegistered()`.
+- Shared setup pipelines call hooks by ID through `applyProviderSetupHook(...)`.
+
+Example layout:
+
+- `src/providers/builtin/<provider>/setup.ts` for onboarding and setup specific hooks
+- `src/providers/builtin/<provider>/runtime.ts` for runtime specific helpers
+
 ### Shared credential writer
 
 API key persistence should use one shared writer:
@@ -187,10 +200,13 @@ For plugin providers, model wiring is usually returned by auth method `run(ctx)`
 
 ### Add a new built in API key provider
 
-1. Add a spec entry in built in declarative provider maps.
-2. Add provider env var candidates if needed.
-3. Add or reuse config patch helpers for provider and default model behavior.
-4. Add targeted tests for interactive and non interactive auth apply.
+1. Add provider module files:
+   - `src/providers/builtin/<provider>/setup.ts`
+   - `src/providers/builtin/<provider>/runtime.ts` (when runtime behavior is needed)
+2. Register setup hooks in `src/providers/builtin/setup-hooks.ts` when custom setup logic is required.
+3. Add a spec entry in built in declarative provider maps.
+4. Add provider env var candidates or runtime resolver hooks if needed.
+5. Add targeted tests for interactive and non interactive auth apply.
 
 ## Important rules
 

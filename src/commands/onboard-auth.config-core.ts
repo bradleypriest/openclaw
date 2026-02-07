@@ -22,6 +22,9 @@ import {
   VENICE_DEFAULT_MODEL_REF,
   VENICE_MODEL_CATALOG,
 } from "../agents/venice-models.js";
+import { ensureBuiltinProviderSetupHooksRegistered } from "../providers/builtin/setup-hooks.js";
+import { ZAI_PROVIDER_CONFIG_HOOK_ID } from "../providers/builtin/zai/setup.js";
+import { applyProviderSetupHook } from "../providers/setup-hooks.js";
 import {
   CLOUDFLARE_AI_GATEWAY_DEFAULT_MODEL_REF,
   OPENROUTER_DEFAULT_MODEL_REF,
@@ -45,7 +48,8 @@ import {
 } from "./onboard-auth.models.js";
 
 export function applyZaiConfig(cfg: OpenClawConfig): OpenClawConfig {
-  const next = applyZaiProviderConfig(cfg);
+  ensureBuiltinProviderSetupHooksRegistered();
+  const next = applyProviderSetupHook(ZAI_PROVIDER_CONFIG_HOOK_ID, cfg);
 
   const existingModel = next.agents?.defaults?.model;
   return {
@@ -62,25 +66,6 @@ export function applyZaiConfig(cfg: OpenClawConfig): OpenClawConfig {
             : undefined),
           primary: ZAI_DEFAULT_MODEL_REF,
         },
-      },
-    },
-  };
-}
-
-export function applyZaiProviderConfig(cfg: OpenClawConfig): OpenClawConfig {
-  const models = { ...cfg.agents?.defaults?.models };
-  models[ZAI_DEFAULT_MODEL_REF] = {
-    ...models[ZAI_DEFAULT_MODEL_REF],
-    alias: models[ZAI_DEFAULT_MODEL_REF]?.alias ?? "GLM",
-  };
-
-  return {
-    ...cfg,
-    agents: {
-      ...cfg.agents,
-      defaults: {
-        ...cfg.agents?.defaults,
-        models,
       },
     },
   };

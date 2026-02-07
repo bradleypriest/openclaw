@@ -5,6 +5,7 @@ import type { ModelProviderAuthMode, ModelProviderConfig } from "../config/types
 import { formatCliCommand } from "../cli/command-format.js";
 import { getShellEnvAppliedKeys } from "../infra/shell-env.js";
 import { resolveProviderEnvApiKey } from "../providers/auth-env-vars.js";
+import { ensureBuiltinProviderEnvApiKeyResolversRegistered } from "../providers/builtin/env-resolvers.js";
 import {
   type AuthProfileStore,
   ensureAuthProfileStore,
@@ -234,6 +235,7 @@ export type EnvApiKeyResult = { apiKey: string; source: string };
 export type ModelAuthMode = "api-key" | "oauth" | "token" | "mixed" | "aws-sdk" | "unknown";
 
 export function resolveEnvApiKey(provider: string): EnvApiKeyResult | null {
+  ensureBuiltinProviderEnvApiKeyResolversRegistered();
   const normalized = normalizeProviderId(provider);
   const applied = new Set(getShellEnvAppliedKeys());
   const pick = (envVar: string): EnvApiKeyResult | null => {
