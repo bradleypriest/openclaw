@@ -332,6 +332,10 @@ Notes:
 Plugins can register **model provider auth** flows so users can run OAuth or
 API-key setup inside OpenClaw (no external scripts needed).
 
+Provider auth choices are derived from providers that your plugin explicitly
+registers. OpenClaw does not enable provider auth just because a manifest file
+exists.
+
 Register a provider via `api.registerProvider(...)`. Each provider exposes one
 or more auth methods (OAuth, API key, device code, etc.). These methods power:
 
@@ -371,10 +375,55 @@ api.registerProvider({
 });
 ```
 
+### API-key method metadata (for onboarding)
+
+For API-key auth methods, include metadata on the auth method so onboarding can
+render prompts and resolve keys consistently:
+
+```ts
+api.registerProvider({
+  id: "acme",
+  label: "AcmeAI",
+  auth: [
+    {
+      id: "api-key",
+      kind: "api_key",
+      label: "Acme API key",
+      hint: "Bring your own key",
+      authChoice: "plugin:acme-provider:acme:api-key",
+      envVars: ["ACME_API_KEY"],
+      profileId: "acme:default",
+      keyPrompt: "Enter Acme API key",
+      defaultModel: "acme/opus-1",
+      group: "acme",
+      groupLabel: "AcmeAI",
+      run: async (ctx) => {
+        const key = String(await ctx.prompter.text({ message: "Enter Acme API key" })).trim();
+        return {
+          profiles: [
+            {
+              profileId: "acme:default",
+              credential: {
+                type: "api_key",
+                provider: "acme",
+                key,
+              },
+            },
+          ],
+          defaultModel: "acme/opus-1",
+        };
+      },
+    },
+  ],
+});
+```
+
 Notes:
 
 - `run` receives a `ProviderAuthContext` with `prompter`, `runtime`,
   `openUrl`, and `oauth.createVpsAwareHandlers` helpers.
+- API-key metadata (`authChoice`, `envVars`, `profileId`, `keyPrompt`,
+  `defaultModel`, `group*`) should live on the registered auth method.
 - Return `configPatch` when you need to add default models or provider config.
 - Return `defaultModel` so `--set-default` can update agent defaults.
 
