@@ -11,9 +11,22 @@ vi.mock("../providers/github-copilot-auth.js", () => ({
   githubCopilotLoginCommand: vi.fn(async () => {}),
 }));
 
-const resolvePluginProviders = vi.hoisted(() => vi.fn(() => []));
+const resolvePluginProviders = vi.hoisted(() =>
+  vi.fn<() => Array<Record<string, unknown>>>(() => []),
+);
 vi.mock("../plugins/providers.js", () => ({
   resolvePluginProviders,
+}));
+
+const findDeclarativeProviderAuthByChoice = vi.hoisted(() =>
+  vi.fn<(choice: string) => Record<string, unknown> | undefined>(() => undefined),
+);
+const findDeclarativeProviderAuthByTokenProvider = vi.hoisted(() =>
+  vi.fn<(provider: string) => Record<string, unknown> | undefined>(() => undefined),
+);
+vi.mock("../plugins/provider-auth-manifest.js", () => ({
+  findDeclarativeProviderAuthByChoice,
+  findDeclarativeProviderAuthByTokenProvider,
 }));
 
 const noopAsync = async () => {};
@@ -41,6 +54,10 @@ describe("applyAuthChoice", () => {
   afterEach(async () => {
     vi.unstubAllGlobals();
     resolvePluginProviders.mockReset();
+    findDeclarativeProviderAuthByChoice.mockReset();
+    findDeclarativeProviderAuthByChoice.mockReturnValue(undefined);
+    findDeclarativeProviderAuthByTokenProvider.mockReset();
+    findDeclarativeProviderAuthByTokenProvider.mockReturnValue(undefined);
     if (tempStateDir) {
       await fs.rm(tempStateDir, { recursive: true, force: true });
       tempStateDir = null;
@@ -811,9 +828,159 @@ describe("applyAuthChoice", () => {
       refresh: "refresh",
     });
   });
+
+  it("applies declarative plugin API-key auth by auth choice", async () => {
+    tempStateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-auth-"));
+    process.env.OPENCLAW_STATE_DIR = tempStateDir;
+    process.env.OPENCLAW_AGENT_DIR = path.join(tempStateDir, "agent");
+    process.env.PI_CODING_AGENT_DIR = process.env.OPENCLAW_AGENT_DIR;
+
+    findDeclarativeProviderAuthByChoice.mockImplementation((choice: string) =>
+      choice === "plugin:xai-provider:xai:api-key"
+        ? {
+            pluginId: "xai-provider",
+            providerId: "xai",
+            authChoice: "plugin:xai-provider:xai:api-key",
+            method: "api-key",
+            label: "xAI (Grok)",
+            hint: "API key",
+            groupId: "xai",
+            groupLabel: "xAI (Grok)",
+            envVars: ["XAI_API_KEY"],
+            defaultModel: "xai/grok-2-latest",
+            profileId: "xai:default",
+            keyPrompt: "Enter xAI API key",
+          }
+        : undefined,
+    );
+
+    const text = vi.fn().mockResolvedValue("sk-xai-test");
+    const prompter: WizardPrompter = {
+      intro: vi.fn(noopAsync),
+      outro: vi.fn(noopAsync),
+      note: vi.fn(noopAsync),
+      select: vi.fn(async () => "" as never),
+      multiselect: vi.fn(async () => []),
+      text,
+      confirm: vi.fn(async () => false),
+      progress: vi.fn(() => ({ update: noop, stop: noop })),
+    };
+    const runtime: RuntimeEnv = {
+      log: vi.fn(),
+      error: vi.fn(),
+      exit: vi.fn((code: number) => {
+        throw new Error(`exit:${code}`);
+      }),
+    };
+
+    const result = await applyAuthChoice({
+      authChoice: "plugin:xai-provider:xai:api-key" as AuthChoice,
+      config: {},
+      prompter,
+      runtime,
+      setDefaultModel: true,
+    });
+
+    expect(text).toHaveBeenCalledWith(expect.objectContaining({ message: "Enter xAI API key" }));
+    expect(result.config.auth?.profiles?.["xai:default"]).toMatchObject({
+      provider: "xai",
+      mode: "api_key",
+    });
+    expect(result.config.agents?.defaults?.model?.primary).toBe("xai/grok-2-latest");
+
+    const authProfilePath = authProfilePathFor(requireAgentDir());
+    const raw = await fs.readFile(authProfilePath, "utf8");
+    const parsed = JSON.parse(raw) as {
+      profiles?: Record<string, { key?: string }>;
+    };
+    expect(parsed.profiles?.["xai:default"]?.key).toBe("sk-xai-test");
+  });
+
+  it("maps --auth-choice apiKey with --token-provider to declarative plugin auth", async () => {
+    tempStateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-auth-"));
+    process.env.OPENCLAW_STATE_DIR = tempStateDir;
+    process.env.OPENCLAW_AGENT_DIR = path.join(tempStateDir, "agent");
+    process.env.PI_CODING_AGENT_DIR = process.env.OPENCLAW_AGENT_DIR;
+
+    findDeclarativeProviderAuthByTokenProvider.mockReturnValue({
+      pluginId: "xai-provider",
+      providerId: "xai",
+      authChoice: "plugin:xai-provider:xai:api-key",
+      method: "api-key",
+      label: "xAI (Grok)",
+      hint: "API key",
+      groupId: "xai",
+      groupLabel: "xAI (Grok)",
+      envVars: ["XAI_API_KEY"],
+      defaultModel: "xai/grok-2-latest",
+      profileId: "xai:default",
+      keyPrompt: "Enter xAI API key",
+    });
+    findDeclarativeProviderAuthByChoice.mockImplementation((choice: string) =>
+      choice === "plugin:xai-provider:xai:api-key"
+        ? {
+            pluginId: "xai-provider",
+            providerId: "xai",
+            authChoice: "plugin:xai-provider:xai:api-key",
+            method: "api-key",
+            label: "xAI (Grok)",
+            hint: "API key",
+            groupId: "xai",
+            groupLabel: "xAI (Grok)",
+            envVars: ["XAI_API_KEY"],
+            defaultModel: "xai/grok-2-latest",
+            profileId: "xai:default",
+            keyPrompt: "Enter xAI API key",
+          }
+        : undefined,
+    );
+
+    const text = vi.fn();
+    const prompter: WizardPrompter = {
+      intro: vi.fn(noopAsync),
+      outro: vi.fn(noopAsync),
+      note: vi.fn(noopAsync),
+      select: vi.fn(async () => "" as never),
+      multiselect: vi.fn(async () => []),
+      text,
+      confirm: vi.fn(async () => false),
+      progress: vi.fn(() => ({ update: noop, stop: noop })),
+    };
+    const runtime: RuntimeEnv = {
+      log: vi.fn(),
+      error: vi.fn(),
+      exit: vi.fn((code: number) => {
+        throw new Error(`exit:${code}`);
+      }),
+    };
+
+    const result = await applyAuthChoice({
+      authChoice: "apiKey",
+      config: {},
+      prompter,
+      runtime,
+      setDefaultModel: false,
+      opts: {
+        tokenProvider: "xai",
+        token: "sk-xai-inline",
+      },
+    });
+
+    expect(text).not.toHaveBeenCalled();
+    expect(result.config.auth?.profiles?.["xai:default"]).toMatchObject({
+      provider: "xai",
+      mode: "api_key",
+    });
+    expect(result.agentModelOverride).toBe("xai/grok-2-latest");
+  });
 });
 
 describe("resolvePreferredProviderForAuthChoice", () => {
+  afterEach(() => {
+    findDeclarativeProviderAuthByChoice.mockReset();
+    findDeclarativeProviderAuthByChoice.mockReturnValue(undefined);
+  });
+
   it("maps github-copilot to the provider", () => {
     expect(resolvePreferredProviderForAuthChoice("github-copilot")).toBe("github-copilot");
   });
@@ -824,5 +991,14 @@ describe("resolvePreferredProviderForAuthChoice", () => {
 
   it("returns undefined for unknown choices", () => {
     expect(resolvePreferredProviderForAuthChoice("unknown" as AuthChoice)).toBeUndefined();
+  });
+
+  it("maps declarative plugin auth choices to the declared provider", () => {
+    findDeclarativeProviderAuthByChoice.mockReturnValue({
+      providerId: "xai",
+    });
+    expect(
+      resolvePreferredProviderForAuthChoice("plugin:xai-provider:xai:api-key" as AuthChoice),
+    ).toBe("xai");
   });
 });

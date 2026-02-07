@@ -5,6 +5,11 @@ import { upsertAuthProfile } from "../../../agents/auth-profiles.js";
 import { normalizeProviderId } from "../../../agents/model-selection.js";
 import { parseDurationMs } from "../../../cli/parse-duration.js";
 import { upsertSharedEnvVar } from "../../../infra/env-file.js";
+import { enablePluginInConfig } from "../../../plugins/enable.js";
+import {
+  findDeclarativeProviderAuthByChoice,
+  findDeclarativeProviderAuthByTokenProvider,
+} from "../../../plugins/provider-auth-manifest.js";
 import { shortenHomePath } from "../../../utils.js";
 import { buildTokenProfileId, validateAnthropicSetupToken } from "../../auth-token.js";
 import { applyGoogleGeminiModelDefault } from "../../google-gemini-model-default.js";
@@ -42,6 +47,156 @@ import {
 import { applyOpenAIConfig } from "../../openai-model-default.js";
 import { resolveNonInteractiveApiKey } from "../api-keys.js";
 
+function applyProviderModelConfig(cfg: OpenClawConfig, modelRef: string): OpenClawConfig {
+  const models = { ...cfg.agents?.defaults?.models };
+  models[modelRef] = {
+    ...models[modelRef],
+  };
+
+  return {
+    ...cfg,
+    agents: {
+      ...cfg.agents,
+      defaults: {
+        ...cfg.agents?.defaults,
+        models,
+      },
+    },
+  };
+}
+
+function applyDefaultModelConfig(cfg: OpenClawConfig, modelRef: string): OpenClawConfig {
+  const next = applyProviderModelConfig(cfg, modelRef);
+  const existingModel = next.agents?.defaults?.model;
+  return {
+    ...next,
+    agents: {
+      ...next.agents,
+      defaults: {
+        ...next.agents?.defaults,
+        model: {
+          ...(existingModel && "fallbacks" in (existingModel as Record<string, unknown>)
+            ? {
+                fallbacks: (existingModel as { fallbacks?: string[] }).fallbacks,
+              }
+            : undefined),
+          primary: modelRef,
+        },
+      },
+    },
+  };
+}
+
+function mapProviderToBuiltinApiAuthChoice(providerRaw?: string): AuthChoice | undefined {
+  const providerInput = providerRaw?.trim();
+  if (!providerInput) {
+    return undefined;
+  }
+
+  const provider = normalizeProviderId(providerInput);
+  if (provider === "openai") {
+    return "openai-api-key";
+  }
+  if (provider === "openrouter") {
+    return "openrouter-api-key";
+  }
+  if (provider === "vercel-ai-gateway") {
+    return "ai-gateway-api-key";
+  }
+  if (provider === "cloudflare-ai-gateway") {
+    return "cloudflare-ai-gateway-api-key";
+  }
+  if (provider === "moonshot") {
+    return "moonshot-api-key";
+  }
+  if (provider === "kimi-code" || provider === "kimi-coding") {
+    return "kimi-code-api-key";
+  }
+  if (provider === "google") {
+    return "gemini-api-key";
+  }
+  if (provider === "zai") {
+    return "zai-api-key";
+  }
+  if (provider === "xiaomi") {
+    return "xiaomi-api-key";
+  }
+  if (provider === "xai") {
+    return "xai-api-key";
+  }
+  if (provider === "synthetic") {
+    return "synthetic-api-key";
+  }
+  if (provider === "venice") {
+    return "venice-api-key";
+  }
+  if (provider === "opencode") {
+    return "opencode-zen";
+  }
+  if (provider === "minimax") {
+    return "minimax-api";
+  }
+
+  return undefined;
+}
+
+async function applyDeclarativeNonInteractiveApiKeyAuth(params: {
+  nextConfig: OpenClawConfig;
+  baseConfig: OpenClawConfig;
+  runtime: RuntimeEnv;
+  token?: string;
+  pluginId: string;
+  providerId: string;
+  profileId: string;
+  defaultModel?: string;
+  envVars: string[];
+}): Promise<OpenClawConfig | null> {
+  const enableResult = enablePluginInConfig(params.nextConfig, params.pluginId);
+  if (!enableResult.enabled) {
+    params.runtime.error(
+      `Provider plugin "${params.pluginId}" is disabled (${enableResult.reason ?? "blocked"}).`,
+    );
+    params.runtime.exit(1);
+    return null;
+  }
+
+  const envVarLabel = params.envVars.join(" or ") || `${params.providerId.toUpperCase()}_API_KEY`;
+  const resolved = await resolveNonInteractiveApiKey({
+    provider: params.providerId,
+    cfg: params.baseConfig,
+    flagValue: params.token,
+    flagName: "--api-key",
+    envVar: envVarLabel,
+    runtime: params.runtime,
+  });
+  if (!resolved) {
+    return null;
+  }
+
+  if (resolved.source !== "profile") {
+    upsertAuthProfile({
+      profileId: params.profileId,
+      credential: {
+        type: "api_key",
+        provider: params.providerId,
+        key: resolved.key,
+      },
+    });
+  }
+
+  let nextConfig = applyAuthProfileConfig(enableResult.config, {
+    profileId: params.profileId,
+    provider: params.providerId,
+    mode: "api_key",
+  });
+
+  if (params.defaultModel) {
+    nextConfig = applyDefaultModelConfig(nextConfig, params.defaultModel);
+  }
+
+  return nextConfig;
+}
+
 export async function applyNonInteractiveAuthChoice(params: {
   nextConfig: OpenClawConfig;
   authChoice: AuthChoice;
@@ -67,7 +222,7 @@ export async function applyNonInteractiveAuthChoice(params: {
     runtime.error(
       [
         'Auth choice "setup-token" requires interactive mode.',
-        'Use "--auth-choice token" with --token and --token-provider anthropic.',
+        'Use "--auth-choice token" with --token and --provider anthropic.',
       ].join("\n"),
     );
     runtime.exit(1);
@@ -75,6 +230,42 @@ export async function applyNonInteractiveAuthChoice(params: {
   }
 
   if (authChoice === "apiKey") {
+    const builtinChoice = mapProviderToBuiltinApiAuthChoice(opts.provider);
+    if (builtinChoice) {
+      return applyNonInteractiveAuthChoice({
+        ...params,
+        authChoice: builtinChoice,
+      });
+    }
+
+    const provider = opts.provider?.trim();
+    const declarative = provider
+      ? findDeclarativeProviderAuthByTokenProvider(provider, {
+          config: baseConfig,
+        })
+      : undefined;
+    if (declarative?.method === "api-key") {
+      return applyDeclarativeNonInteractiveApiKeyAuth({
+        nextConfig,
+        baseConfig,
+        runtime,
+        token: opts.token,
+        pluginId: declarative.pluginId,
+        providerId: declarative.providerId,
+        profileId: declarative.profileId,
+        defaultModel: declarative.defaultModel,
+        envVars: declarative.envVars,
+      });
+    }
+
+    if (provider && normalizeProviderId(provider) !== "anthropic") {
+      runtime.error(
+        `Unsupported --provider ${provider} for --auth-choice apiKey. Use --provider <provider-id> or <npm-package>:<provider-id>, or pass an explicit --auth-choice.`,
+      );
+      runtime.exit(1);
+      return null;
+    }
+
     const resolved = await resolveNonInteractiveApiKey({
       provider: "anthropic",
       cfg: baseConfig,
@@ -97,15 +288,15 @@ export async function applyNonInteractiveAuthChoice(params: {
   }
 
   if (authChoice === "token") {
-    const providerRaw = opts.tokenProvider?.trim();
+    const providerRaw = opts.provider?.trim();
     if (!providerRaw) {
-      runtime.error("Missing --token-provider for --auth-choice token.");
+      runtime.error("Missing --provider for --auth-choice token.");
       runtime.exit(1);
       return null;
     }
     const provider = normalizeProviderId(providerRaw);
     if (provider !== "anthropic") {
-      runtime.error("Only --token-provider anthropic is supported for --auth-choice token.");
+      runtime.error("Only --provider anthropic is supported for --auth-choice token.");
       runtime.exit(1);
       return null;
     }
@@ -516,6 +707,23 @@ export async function applyNonInteractiveAuthChoice(params: {
       mode: "api_key",
     });
     return applyOpencodeZenConfig(nextConfig);
+  }
+
+  const declarativeChoice = findDeclarativeProviderAuthByChoice(authChoice, {
+    config: baseConfig,
+  });
+  if (declarativeChoice?.method === "api-key") {
+    return applyDeclarativeNonInteractiveApiKeyAuth({
+      nextConfig,
+      baseConfig,
+      runtime,
+      token: opts.token,
+      pluginId: declarativeChoice.pluginId,
+      providerId: declarativeChoice.providerId,
+      profileId: declarativeChoice.profileId,
+      defaultModel: declarativeChoice.defaultModel,
+      envVars: declarativeChoice.envVars,
+    });
   }
 
   if (

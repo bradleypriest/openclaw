@@ -45,8 +45,8 @@ describe("onboard (non-interactive): xAI", () => {
       await runNonInteractiveOnboarding(
         {
           nonInteractive: true,
-          authChoice: "xai-api-key",
-          xaiApiKey: "xai-test-key",
+          provider: "xai",
+          apiKey: "xai-test-key",
           skipHealth: true,
           skipChannels: true,
           skipSkills: true,

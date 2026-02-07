@@ -61,9 +61,14 @@ export function registerOnboardCommand(program: Command) {
       "Auth: setup-token|token|chutes|openai-codex|openai-api-key|openrouter-api-key|ai-gateway-api-key|cloudflare-ai-gateway-api-key|moonshot-api-key|moonshot-api-key-cn|kimi-code-api-key|synthetic-api-key|venice-api-key|gemini-api-key|zai-api-key|xiaomi-api-key|xai-api-key|apiKey|minimax-api|minimax-api-lightning|opencode-zen|skip",
     )
     .option(
-      "--token-provider <id>",
-      "Token provider id (non-interactive; used with --auth-choice token)",
+      "--provider <provider>",
+      "Provider shortcut: <provider-id> or <npm-package>:<provider-id>",
     )
+    .option(
+      "--token-provider <id>",
+      "Provider id for --auth-choice token (legacy alias for --provider)",
+    )
+    .option("--api-key <key>", "API key for --provider (non-interactive)")
     .option("--token <token>", "Token value (non-interactive; used with --auth-choice token)")
     .option(
       "--token-profile-id <id>",
@@ -121,7 +126,9 @@ export function registerOnboardCommand(program: Command) {
             flow: opts.flow as "quickstart" | "advanced" | "manual" | undefined,
             mode: opts.mode as "local" | "remote" | undefined,
             authChoice: opts.authChoice as AuthChoice | undefined,
+            provider: opts.provider as string | undefined,
             tokenProvider: opts.tokenProvider as string | undefined,
+            apiKey: opts.apiKey as string | undefined,
             token: opts.token as string | undefined,
             tokenProfileId: opts.tokenProfileId as string | undefined,
             tokenExpiresIn: opts.tokenExpiresIn as string | undefined,
