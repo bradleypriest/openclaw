@@ -121,7 +121,7 @@ export async function installCommunityProviderFromNpm(params: {
     return {
       ok: false,
       npmSpec,
-      error: `Plugin "${pluginName}" does not declare any API-key providerAuth entries`,
+      error: `Plugin "${pluginName}" does not register any API-key provider auth methods`,
     };
   }
 

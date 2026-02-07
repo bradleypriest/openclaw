@@ -106,7 +106,7 @@ describe("provider-install", () => {
 
     expect(result.ok).toBe(false);
     if (!result.ok) {
-      expect(result.error).toContain("does not declare any API-key providerAuth entries");
+      expect(result.error).toContain("does not register any API-key provider auth methods");
     }
   });
 });
