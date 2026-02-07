@@ -22,7 +22,7 @@ This page documents the final provider auth API after the pluggable onboarding a
 
 - `api.registerProvider(...)` is the source of truth for provider auth behavior.
 - Provider auth choices are derived from registered providers and methods.
-- Manifest metadata can enrich registered methods, but manifest only entries do not create provider auth choices.
+- Manifest files do not define provider auth behavior.
 - Canonical plugin auth choice format is `plugin:<pluginId>:<providerId>:<method>`.
 - Legacy `plugin-auth:<...>` is not supported.
 - API key persistence uses shared `writeApiKeyCredential(...)`.
@@ -161,7 +161,7 @@ This replaces provider specific setter wrappers.
 Provider API key env var candidates are centralized and reused by auth lookup:
 
 - built in aliases and common env vars
-- optional plugin metadata env vars
+- auth method `envVars` from registered providers
 
 ## Internal provider registration and model wiring
 
@@ -203,14 +203,3 @@ For plugin providers, model wiring is usually returned by auth method `run(ctx)`
 - [CLI](/cli)
 - [Plugin](/plugin)
 - [OpenRouter](/providers/openrouter)
-
-## Built-in Provider Contract
-
-- Built-ins should be represented as declarative specs consumed by shared auth apply paths.
-- Provider-specific exceptions should be narrow hooks (example: Cloudflare account and gateway context).
-
-## Validation Rules
-
-- No provider auth options from manifest-only definitions.
-- No legacy `plugin-auth` auth choices.
-- Non-interactive API key setup uses shared flow and shared credential writer.
