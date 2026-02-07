@@ -49,17 +49,7 @@ import {
   VENICE_DEFAULT_MODEL_REF,
   VERCEL_AI_GATEWAY_DEFAULT_MODEL_REF,
   XIAOMI_DEFAULT_MODEL_REF,
-  setCloudflareAiGatewayConfig,
-  setGeminiApiKey,
-  setKimiCodingApiKey,
-  setMoonshotApiKey,
-  setOpencodeZenApiKey,
-  setOpenrouterApiKey,
-  setSyntheticApiKey,
-  setVeniceApiKey,
-  setVercelAiGatewayApiKey,
-  setXiaomiApiKey,
-  setZaiApiKey,
+  writeApiKeyCredential,
   ZAI_DEFAULT_MODEL_REF,
 } from "./onboard-auth.js";
 import { OPENCODE_ZEN_DEFAULT_MODEL } from "./opencode-zen-model-default.js";
@@ -155,11 +145,6 @@ type BuiltinDeclarativeApiProviderSpec = {
   label: string;
   keyPrompt: string;
   envProvider?: string;
-  setApiKey: (
-    apiKey: string,
-    agentDir?: string,
-    context?: BuiltinProviderContext,
-  ) => Promise<void> | void;
   resolveOptionApiKey?: (opts: ApplyAuthChoiceParams["opts"]) => string | undefined;
   resolveContext?: (params: ApplyAuthChoiceParams) => Promise<BuiltinProviderContext>;
   noteBeforePrompt?: { title: string; message: string };
@@ -176,7 +161,6 @@ const BUILTIN_DECLARATIVE_API_PROVIDER_SPECS: BuiltinDeclarativeApiProviderSpec[
     profileId: "openrouter:default",
     label: "OpenRouter",
     keyPrompt: "Enter OpenRouter API key",
-    setApiKey: setOpenrouterApiKey,
     defaultModel: {
       kind: "standard",
       defaultModel: OPENROUTER_DEFAULT_MODEL_REF,
@@ -192,7 +176,6 @@ const BUILTIN_DECLARATIVE_API_PROVIDER_SPECS: BuiltinDeclarativeApiProviderSpec[
     profileId: "vercel-ai-gateway:default",
     label: "Vercel AI Gateway",
     keyPrompt: "Enter Vercel AI Gateway API key",
-    setApiKey: setVercelAiGatewayApiKey,
     defaultModel: {
       kind: "standard",
       defaultModel: VERCEL_AI_GATEWAY_DEFAULT_MODEL_REF,
@@ -230,14 +213,6 @@ const BUILTIN_DECLARATIVE_API_PROVIDER_SPECS: BuiltinDeclarativeApiProviderSpec[
 
       return { accountId, gatewayId };
     },
-    setApiKey: async (apiKey, agentDir, context) => {
-      const accountId = context?.accountId?.trim();
-      const gatewayId = context?.gatewayId?.trim();
-      if (!accountId || !gatewayId) {
-        throw new Error("Cloudflare Account ID and Gateway ID are required");
-      }
-      await setCloudflareAiGatewayConfig(accountId, gatewayId, apiKey, agentDir);
-    },
     defaultModel: {
       kind: "standard",
       defaultModel: CLOUDFLARE_AI_GATEWAY_DEFAULT_MODEL_REF,
@@ -261,7 +236,6 @@ const BUILTIN_DECLARATIVE_API_PROVIDER_SPECS: BuiltinDeclarativeApiProviderSpec[
     profileId: "moonshot:default",
     label: "Moonshot",
     keyPrompt: "Enter Moonshot API key",
-    setApiKey: setMoonshotApiKey,
     defaultModel: {
       kind: "standard",
       defaultModel: MOONSHOT_DEFAULT_MODEL_REF,
@@ -276,7 +250,6 @@ const BUILTIN_DECLARATIVE_API_PROVIDER_SPECS: BuiltinDeclarativeApiProviderSpec[
     profileId: "moonshot:default",
     label: "Moonshot (.cn)",
     keyPrompt: "Enter Moonshot API key (.cn)",
-    setApiKey: setMoonshotApiKey,
     defaultModel: {
       kind: "standard",
       defaultModel: MOONSHOT_DEFAULT_MODEL_REF,
@@ -291,7 +264,6 @@ const BUILTIN_DECLARATIVE_API_PROVIDER_SPECS: BuiltinDeclarativeApiProviderSpec[
     profileId: "kimi-coding:default",
     label: "Kimi Coding",
     keyPrompt: "Enter Kimi Coding API key",
-    setApiKey: setKimiCodingApiKey,
     noteBeforePrompt: {
       title: "Kimi Coding",
       message: [
@@ -314,7 +286,6 @@ const BUILTIN_DECLARATIVE_API_PROVIDER_SPECS: BuiltinDeclarativeApiProviderSpec[
     profileId: "google:default",
     label: "Google Gemini",
     keyPrompt: "Enter Gemini API key",
-    setApiKey: setGeminiApiKey,
     defaultModel: {
       kind: "gemini",
       defaultModel: GOOGLE_GEMINI_DEFAULT_MODEL,
@@ -327,7 +298,6 @@ const BUILTIN_DECLARATIVE_API_PROVIDER_SPECS: BuiltinDeclarativeApiProviderSpec[
     profileId: "zai:default",
     label: "Z.AI",
     keyPrompt: "Enter Z.AI API key",
-    setApiKey: setZaiApiKey,
     defaultModel: {
       kind: "standard",
       defaultModel: ZAI_DEFAULT_MODEL_REF,
@@ -343,7 +313,6 @@ const BUILTIN_DECLARATIVE_API_PROVIDER_SPECS: BuiltinDeclarativeApiProviderSpec[
     profileId: "xiaomi:default",
     label: "Xiaomi",
     keyPrompt: "Enter Xiaomi API key",
-    setApiKey: setXiaomiApiKey,
     defaultModel: {
       kind: "standard",
       defaultModel: XIAOMI_DEFAULT_MODEL_REF,
@@ -359,7 +328,6 @@ const BUILTIN_DECLARATIVE_API_PROVIDER_SPECS: BuiltinDeclarativeApiProviderSpec[
     profileId: "synthetic:default",
     label: "Synthetic",
     keyPrompt: "Enter Synthetic API key",
-    setApiKey: setSyntheticApiKey,
     validate: (value) => (value.trim() ? undefined : "Required"),
     defaultModel: {
       kind: "standard",
@@ -376,7 +344,6 @@ const BUILTIN_DECLARATIVE_API_PROVIDER_SPECS: BuiltinDeclarativeApiProviderSpec[
     profileId: "venice:default",
     label: "Venice AI",
     keyPrompt: "Enter Venice AI API key",
-    setApiKey: setVeniceApiKey,
     noteBeforePrompt: {
       title: "Venice AI",
       message: [
@@ -401,7 +368,6 @@ const BUILTIN_DECLARATIVE_API_PROVIDER_SPECS: BuiltinDeclarativeApiProviderSpec[
     label: "OpenCode Zen",
     keyPrompt: "Enter OpenCode Zen API key",
     envProvider: "opencode",
-    setApiKey: setOpencodeZenApiKey,
     noteBeforePrompt: {
       title: "OpenCode Zen",
       message: [
@@ -570,11 +536,28 @@ async function applyBuiltinDeclarativeApiProvider(params: {
 
   const persistCredential = async (rawKey: string): Promise<void> => {
     const context = await ensureContext();
-    await spec.setApiKey(
-      normalizeBuiltinApiKeyInput(spec, rawKey),
-      params.params.agentDir,
-      context,
-    );
+    if (spec.providerId === "cloudflare-ai-gateway") {
+      const accountId = context?.accountId?.trim();
+      const gatewayId = context?.gatewayId?.trim();
+      if (!accountId || !gatewayId) {
+        throw new Error("Cloudflare Account ID and Gateway ID are required");
+      }
+      await writeApiKeyCredential({
+        providerId: spec.providerId,
+        profileId: spec.profileId,
+        key: normalizeBuiltinApiKeyInput(spec, rawKey),
+        metadata: { accountId, gatewayId },
+        agentDir: params.params.agentDir,
+      });
+      return;
+    }
+
+    await writeApiKeyCredential({
+      providerId: spec.providerId,
+      profileId: spec.profileId,
+      key: normalizeBuiltinApiKeyInput(spec, rawKey),
+      agentDir: params.params.agentDir,
+    });
   };
 
   let hasCredential = false;

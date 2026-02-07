@@ -29,20 +29,7 @@ import {
   applyXaiConfig,
   applyXiaomiConfig,
   applyZaiConfig,
-  setAnthropicApiKey,
-  setCloudflareAiGatewayConfig,
-  setGeminiApiKey,
-  setKimiCodingApiKey,
-  setMinimaxApiKey,
-  setMoonshotApiKey,
-  setOpencodeZenApiKey,
-  setOpenrouterApiKey,
-  setSyntheticApiKey,
-  setXaiApiKey,
-  setVeniceApiKey,
-  setVercelAiGatewayApiKey,
-  setXiaomiApiKey,
-  setZaiApiKey,
+  writeApiKeyCredential,
 } from "../../onboard-auth.js";
 import { applyOpenAIConfig } from "../../openai-model-default.js";
 import { resolveNonInteractiveApiKey } from "../api-keys.js";
@@ -197,6 +184,20 @@ async function applyDeclarativeNonInteractiveApiKeyAuth(params: {
   return nextConfig;
 }
 
+async function persistApiKeyProfile(params: {
+  providerId: string;
+  profileId: string;
+  key: string;
+  metadata?: Record<string, string | undefined>;
+}) {
+  await writeApiKeyCredential({
+    providerId: params.providerId,
+    profileId: params.profileId,
+    key: params.key,
+    metadata: params.metadata,
+  });
+}
+
 export async function applyNonInteractiveAuthChoice(params: {
   nextConfig: OpenClawConfig;
   authChoice: AuthChoice;
@@ -278,7 +279,11 @@ export async function applyNonInteractiveAuthChoice(params: {
       return null;
     }
     if (resolved.source !== "profile") {
-      await setAnthropicApiKey(resolved.key);
+      await persistApiKeyProfile({
+        providerId: "anthropic",
+        profileId: "anthropic:default",
+        key: resolved.key,
+      });
     }
     return applyAuthProfileConfig(nextConfig, {
       profileId: "anthropic:default",
@@ -355,7 +360,11 @@ export async function applyNonInteractiveAuthChoice(params: {
       return null;
     }
     if (resolved.source !== "profile") {
-      await setGeminiApiKey(resolved.key);
+      await persistApiKeyProfile({
+        providerId: "google",
+        profileId: "google:default",
+        key: resolved.key,
+      });
     }
     nextConfig = applyAuthProfileConfig(nextConfig, {
       profileId: "google:default",
@@ -378,7 +387,11 @@ export async function applyNonInteractiveAuthChoice(params: {
       return null;
     }
     if (resolved.source !== "profile") {
-      await setZaiApiKey(resolved.key);
+      await persistApiKeyProfile({
+        providerId: "zai",
+        profileId: "zai:default",
+        key: resolved.key,
+      });
     }
     nextConfig = applyAuthProfileConfig(nextConfig, {
       profileId: "zai:default",
@@ -401,7 +414,11 @@ export async function applyNonInteractiveAuthChoice(params: {
       return null;
     }
     if (resolved.source !== "profile") {
-      await setXiaomiApiKey(resolved.key);
+      await persistApiKeyProfile({
+        providerId: "xiaomi",
+        profileId: "xiaomi:default",
+        key: resolved.key,
+      });
     }
     nextConfig = applyAuthProfileConfig(nextConfig, {
       profileId: "xiaomi:default",
@@ -424,7 +441,11 @@ export async function applyNonInteractiveAuthChoice(params: {
       return null;
     }
     if (resolved.source !== "profile") {
-      setXaiApiKey(resolved.key);
+      await persistApiKeyProfile({
+        providerId: "xai",
+        profileId: "xai:default",
+        key: resolved.key,
+      });
     }
     nextConfig = applyAuthProfileConfig(nextConfig, {
       profileId: "xai:default",
@@ -467,7 +488,11 @@ export async function applyNonInteractiveAuthChoice(params: {
       return null;
     }
     if (resolved.source !== "profile") {
-      await setOpenrouterApiKey(resolved.key);
+      await persistApiKeyProfile({
+        providerId: "openrouter",
+        profileId: "openrouter:default",
+        key: resolved.key,
+      });
     }
     nextConfig = applyAuthProfileConfig(nextConfig, {
       profileId: "openrouter:default",
@@ -490,7 +515,11 @@ export async function applyNonInteractiveAuthChoice(params: {
       return null;
     }
     if (resolved.source !== "profile") {
-      await setVercelAiGatewayApiKey(resolved.key);
+      await persistApiKeyProfile({
+        providerId: "vercel-ai-gateway",
+        profileId: "vercel-ai-gateway:default",
+        key: resolved.key,
+      });
     }
     nextConfig = applyAuthProfileConfig(nextConfig, {
       profileId: "vercel-ai-gateway:default",
@@ -525,7 +554,12 @@ export async function applyNonInteractiveAuthChoice(params: {
       return null;
     }
     if (resolved.source !== "profile") {
-      await setCloudflareAiGatewayConfig(accountId, gatewayId, resolved.key);
+      await persistApiKeyProfile({
+        providerId: "cloudflare-ai-gateway",
+        profileId: "cloudflare-ai-gateway:default",
+        key: resolved.key,
+        metadata: { accountId, gatewayId },
+      });
     }
     nextConfig = applyAuthProfileConfig(nextConfig, {
       profileId: "cloudflare-ai-gateway:default",
@@ -551,7 +585,11 @@ export async function applyNonInteractiveAuthChoice(params: {
       return null;
     }
     if (resolved.source !== "profile") {
-      await setMoonshotApiKey(resolved.key);
+      await persistApiKeyProfile({
+        providerId: "moonshot",
+        profileId: "moonshot:default",
+        key: resolved.key,
+      });
     }
     nextConfig = applyAuthProfileConfig(nextConfig, {
       profileId: "moonshot:default",
@@ -574,7 +612,11 @@ export async function applyNonInteractiveAuthChoice(params: {
       return null;
     }
     if (resolved.source !== "profile") {
-      await setMoonshotApiKey(resolved.key);
+      await persistApiKeyProfile({
+        providerId: "moonshot",
+        profileId: "moonshot:default",
+        key: resolved.key,
+      });
     }
     nextConfig = applyAuthProfileConfig(nextConfig, {
       profileId: "moonshot:default",
@@ -597,7 +639,11 @@ export async function applyNonInteractiveAuthChoice(params: {
       return null;
     }
     if (resolved.source !== "profile") {
-      await setKimiCodingApiKey(resolved.key);
+      await persistApiKeyProfile({
+        providerId: "kimi-coding",
+        profileId: "kimi-coding:default",
+        key: resolved.key,
+      });
     }
     nextConfig = applyAuthProfileConfig(nextConfig, {
       profileId: "kimi-coding:default",
@@ -620,7 +666,11 @@ export async function applyNonInteractiveAuthChoice(params: {
       return null;
     }
     if (resolved.source !== "profile") {
-      await setSyntheticApiKey(resolved.key);
+      await persistApiKeyProfile({
+        providerId: "synthetic",
+        profileId: "synthetic:default",
+        key: resolved.key,
+      });
     }
     nextConfig = applyAuthProfileConfig(nextConfig, {
       profileId: "synthetic:default",
@@ -643,7 +693,11 @@ export async function applyNonInteractiveAuthChoice(params: {
       return null;
     }
     if (resolved.source !== "profile") {
-      await setVeniceApiKey(resolved.key);
+      await persistApiKeyProfile({
+        providerId: "venice",
+        profileId: "venice:default",
+        key: resolved.key,
+      });
     }
     nextConfig = applyAuthProfileConfig(nextConfig, {
       profileId: "venice:default",
@@ -670,7 +724,11 @@ export async function applyNonInteractiveAuthChoice(params: {
       return null;
     }
     if (resolved.source !== "profile") {
-      await setMinimaxApiKey(resolved.key);
+      await persistApiKeyProfile({
+        providerId: "minimax",
+        profileId: "minimax:default",
+        key: resolved.key,
+      });
     }
     nextConfig = applyAuthProfileConfig(nextConfig, {
       profileId: "minimax:default",
@@ -699,7 +757,11 @@ export async function applyNonInteractiveAuthChoice(params: {
       return null;
     }
     if (resolved.source !== "profile") {
-      await setOpencodeZenApiKey(resolved.key);
+      await persistApiKeyProfile({
+        providerId: "opencode",
+        profileId: "opencode:default",
+        key: resolved.key,
+      });
     }
     nextConfig = applyAuthProfileConfig(nextConfig, {
       profileId: "opencode:default",
