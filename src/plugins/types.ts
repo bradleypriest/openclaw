@@ -108,6 +108,27 @@ export type ProviderAuthMethod = {
   label: string;
   hint?: string;
   kind: ProviderAuthKind;
+  onboarding?: ProviderAuthMethodOnboarding;
+  // Deprecated: use onboarding.authChoice instead.
+  authChoice?: string;
+  // Deprecated: use onboarding.group instead.
+  group?: string;
+  // Deprecated: use onboarding.groupLabel instead.
+  groupLabel?: string;
+  // Deprecated: use onboarding.groupHint instead.
+  groupHint?: string;
+  // Deprecated: use onboarding.envVars instead.
+  envVars?: string[];
+  // Deprecated: use onboarding.defaultModel instead.
+  defaultModel?: string;
+  // Deprecated: use onboarding.profileId instead.
+  profileId?: string;
+  // Deprecated: use onboarding.keyPrompt instead.
+  keyPrompt?: string;
+  run: (ctx: ProviderAuthContext) => Promise<ProviderAuthResult>;
+};
+
+export type ProviderAuthMethodOnboarding = {
   authChoice?: string;
   group?: string;
   groupLabel?: string;
@@ -116,7 +137,6 @@ export type ProviderAuthMethod = {
   defaultModel?: string;
   profileId?: string;
   keyPrompt?: string;
-  run: (ctx: ProviderAuthContext) => Promise<ProviderAuthResult>;
 };
 
 export type ProviderPlugin = {
