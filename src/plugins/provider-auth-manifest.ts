@@ -1,5 +1,9 @@
 import type { OpenClawConfig } from "../config/config.js";
-import type { ProviderAuthMethod, ProviderAuthKind } from "./types.js";
+import type {
+  ProviderAuthMethod,
+  ProviderAuthKind,
+  ProviderAuthMethodOnboarding,
+} from "./types.js";
 import { normalizeProviderId } from "../agents/model-selection.js";
 import { resolvePluginProviderRegistrations } from "./providers.js";
 
@@ -72,6 +76,24 @@ function normalizeStringList(values: Array<string | undefined>): string[] {
   return [...new Set(values.map((value) => value?.trim() ?? "").filter(Boolean))];
 }
 
+function resolveOnboardingField(
+  method: ProviderAuthMethod,
+  selector: (value: ProviderAuthMethodOnboarding) => string | undefined,
+  legacy: string | undefined,
+): string | undefined {
+  const onboardingValue = method.onboarding ? selector(method.onboarding) : undefined;
+  return normalizeOptionalString(onboardingValue) ?? normalizeOptionalString(legacy);
+}
+
+function resolveOnboardingListField(
+  method: ProviderAuthMethod,
+  selector: (value: ProviderAuthMethodOnboarding) => string[] | undefined,
+  legacy: string[] | undefined,
+): string[] {
+  const onboarding = method.onboarding ? selector(method.onboarding) : undefined;
+  return normalizeStringList([...(onboarding ?? []), ...(legacy ?? [])]);
+}
+
 function buildSpecFromRegisteredMethod(params: {
   pluginId: string;
   providerIdRaw: string;
@@ -87,14 +109,25 @@ function buildSpecFromRegisteredMethod(params: {
     providerId;
   const hint = normalizeOptionalString(params.method.hint);
   const groupId =
-    normalizeProviderId(normalizeOptionalString(params.method.group) ?? providerId) || providerId;
+    normalizeProviderId(
+      resolveOnboardingField(params.method, (value) => value.group, params.method.group) ??
+        providerId,
+    ) || providerId;
   const groupLabel =
-    normalizeOptionalString(params.method.groupLabel) ??
+    resolveOnboardingField(params.method, (value) => value.groupLabel, params.method.groupLabel) ??
     normalizeOptionalString(params.providerLabel) ??
     label;
-  const groupHint = normalizeOptionalString(params.method.groupHint);
-  const profileId = normalizeOptionalString(params.method.profileId) ?? `${providerId}:default`;
-  const keyPrompt = normalizeOptionalString(params.method.keyPrompt) ?? `Enter ${label} API key`;
+  const groupHint = resolveOnboardingField(
+    params.method,
+    (value) => value.groupHint,
+    params.method.groupHint,
+  );
+  const profileId =
+    resolveOnboardingField(params.method, (value) => value.profileId, params.method.profileId) ??
+    `${providerId}:default`;
+  const keyPrompt =
+    resolveOnboardingField(params.method, (value) => value.keyPrompt, params.method.keyPrompt) ??
+    `Enter ${label} API key`;
 
   return {
     pluginId: params.pluginId,
@@ -103,7 +136,11 @@ function buildSpecFromRegisteredMethod(params: {
       pluginId: params.pluginId,
       providerId,
       method,
-      methodAuthChoice: params.method.authChoice,
+      methodAuthChoice: resolveOnboardingField(
+        params.method,
+        (value) => value.authChoice,
+        params.method.authChoice,
+      ),
     }),
     method,
     label,
@@ -112,10 +149,14 @@ function buildSpecFromRegisteredMethod(params: {
     groupLabel,
     groupHint,
     envVars: normalizeStringList([
-      ...(params.method.envVars ?? []),
+      ...resolveOnboardingListField(params.method, (value) => value.envVars, params.method.envVars),
       ...(params.providerEnvVars ?? []),
     ]),
-    defaultModel: normalizeOptionalString(params.method.defaultModel),
+    defaultModel: resolveOnboardingField(
+      params.method,
+      (value) => value.defaultModel,
+      params.method.defaultModel,
+    ),
     profileId,
     keyPrompt,
   };

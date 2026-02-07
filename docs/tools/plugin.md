@@ -377,8 +377,8 @@ api.registerProvider({
 
 ### API-key method metadata (for onboarding)
 
-For API-key auth methods, include metadata on the auth method so onboarding can
-render prompts and resolve keys consistently:
+For API-key auth methods, include onboarding metadata under `onboarding` so
+setup prompts and key resolution remain consistent:
 
 ```ts
 api.registerProvider({
@@ -390,13 +390,15 @@ api.registerProvider({
       kind: "api_key",
       label: "Acme API key",
       hint: "Bring your own key",
-      authChoice: "plugin:acme-provider:acme:api-key",
-      envVars: ["ACME_API_KEY"],
-      profileId: "acme:default",
-      keyPrompt: "Enter Acme API key",
-      defaultModel: "acme/opus-1",
-      group: "acme",
-      groupLabel: "AcmeAI",
+      onboarding: {
+        authChoice: "plugin:acme-provider:acme:api-key",
+        envVars: ["ACME_API_KEY"],
+        profileId: "acme:default",
+        keyPrompt: "Enter Acme API key",
+        defaultModel: "acme/opus-1",
+        group: "acme",
+        groupLabel: "AcmeAI",
+      },
       run: async (ctx) => {
         const key = String(await ctx.prompter.text({ message: "Enter Acme API key" })).trim();
         return {
@@ -423,7 +425,7 @@ Notes:
 - `run` receives a `ProviderAuthContext` with `prompter`, `runtime`,
   `openUrl`, and `oauth.createVpsAwareHandlers` helpers.
 - API-key metadata (`authChoice`, `envVars`, `profileId`, `keyPrompt`,
-  `defaultModel`, `group*`) should live on the registered auth method.
+  `defaultModel`, `group*`) should live in `method.onboarding`.
 - Return `configPatch` when you need to add default models or provider config.
 - Return `defaultModel` so `--set-default` can update agent defaults.
 

@@ -32,12 +32,14 @@ describe("provider-auth-manifest", () => {
               id: "api-key",
               label: "xAI (Grok)",
               hint: "API key",
-              envVars: ["XAI_API_KEY"],
-              defaultModel: "xai/grok-2-latest",
-              profileId: "xai:default",
-              keyPrompt: "Enter xAI API key",
-              group: "xai",
-              groupLabel: "xAI (Grok)",
+              onboarding: {
+                envVars: ["XAI_API_KEY"],
+                defaultModel: "xai/grok-2-latest",
+                profileId: "xai:default",
+                keyPrompt: "Enter xAI API key",
+                group: "xai",
+                groupLabel: "xAI (Grok)",
+              },
               kind: "api_key",
               run: vi.fn(),
             },
@@ -62,6 +64,43 @@ describe("provider-auth-manifest", () => {
       defaultModel: "xai/grok-2-latest",
       profileId: "xai:default",
       keyPrompt: "Enter xAI API key",
+    });
+  });
+
+  it("supports legacy top-level onboarding fields for compatibility", async () => {
+    resolvePluginProviderRegistrations.mockReturnValue([
+      {
+        pluginId: "legacy-provider",
+        provider: {
+          id: "legacy",
+          label: "Legacy Provider",
+          auth: [
+            {
+              id: "api-key",
+              label: "Legacy API key",
+              kind: "api_key",
+              authChoice: "plugin:legacy-provider:legacy:api-key",
+              envVars: ["LEGACY_API_KEY"],
+              profileId: "legacy:default",
+              keyPrompt: "Enter Legacy API key",
+              run: vi.fn(),
+            },
+          ],
+        },
+      },
+    ]);
+
+    vi.resetModules();
+    const { resolveDeclarativeProviderAuthSpecs } = await import("./provider-auth-manifest.js");
+    const specs = resolveDeclarativeProviderAuthSpecs();
+
+    expect(specs).toHaveLength(1);
+    expect(specs[0]).toMatchObject({
+      providerId: "legacy",
+      authChoice: "plugin:legacy-provider:legacy:api-key",
+      envVars: ["LEGACY_API_KEY"],
+      profileId: "legacy:default",
+      keyPrompt: "Enter Legacy API key",
     });
   });
 

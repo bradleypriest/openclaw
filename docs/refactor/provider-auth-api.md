@@ -85,7 +85,7 @@ openclaw onboard --non-interactive --accept-risk \
 
 ### Auth method metadata for onboarding
 
-For `kind: "api_key"`, include metadata directly on the auth method when possible:
+For `kind: "api_key"`, include setup metadata under `onboarding` when possible:
 
 - `authChoice`
 - `envVars`
@@ -108,13 +108,15 @@ api.registerProvider({
       kind: "api_key",
       label: "Acme API key",
       hint: "Bring your own key",
-      authChoice: "plugin:acme-provider:acme:api-key",
-      envVars: ["ACME_API_KEY"],
-      profileId: "acme:default",
-      keyPrompt: "Enter Acme API key",
-      defaultModel: "acme/opus-1",
-      group: "acme",
-      groupLabel: "AcmeAI",
+      onboarding: {
+        authChoice: "plugin:acme-provider:acme:api-key",
+        envVars: ["ACME_API_KEY"],
+        profileId: "acme:default",
+        keyPrompt: "Enter Acme API key",
+        defaultModel: "acme/opus-1",
+        group: "acme",
+        groupLabel: "AcmeAI",
+      },
       run: async (ctx) => {
         const key = String(await ctx.prompter.text({ message: "Enter Acme API key" })).trim();
         return {
