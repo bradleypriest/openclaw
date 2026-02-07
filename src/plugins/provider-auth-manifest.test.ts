@@ -7,8 +7,21 @@ const loadPluginManifestRegistry = vi.hoisted(() =>
   })),
 );
 
+const resolvePluginProviderRegistrations = vi.hoisted(() =>
+  vi.fn<
+    () => Array<{
+      pluginId: string;
+      provider: { id: string; label?: string; auth: Array<Record<string, unknown>> };
+    }>
+  >(() => []),
+);
+
 vi.mock("./manifest-registry.js", () => ({
   loadPluginManifestRegistry,
+}));
+
+vi.mock("./providers.js", () => ({
+  resolvePluginProviderRegistrations,
 }));
 
 describe("provider-auth-manifest", () => {
@@ -16,6 +29,8 @@ describe("provider-auth-manifest", () => {
     vi.resetModules();
     loadPluginManifestRegistry.mockReset();
     loadPluginManifestRegistry.mockReturnValue({ plugins: [], diagnostics: [] });
+    resolvePluginProviderRegistrations.mockReset();
+    resolvePluginProviderRegistrations.mockReturnValue([]);
   });
 
   it("derives declarative API-key auth specs from plugin manifests", async () => {
@@ -38,6 +53,23 @@ describe("provider-auth-manifest", () => {
       ],
       diagnostics: [],
     });
+    resolvePluginProviderRegistrations.mockReturnValue([
+      {
+        pluginId: "xai-provider",
+        provider: {
+          id: "xai",
+          label: "xAI (Grok)",
+          auth: [
+            {
+              id: "api-key",
+              label: "xAI (Grok)",
+              kind: "api_key",
+              run: vi.fn(),
+            },
+          ],
+        },
+      },
+    ]);
 
     vi.resetModules();
     const { resolveDeclarativeProviderAuthSpecs } = await import("./provider-auth-manifest.js");
@@ -58,6 +90,31 @@ describe("provider-auth-manifest", () => {
     });
   });
 
+  it("does not create auth specs from manifest-only providerAuth entries", async () => {
+    loadPluginManifestRegistry.mockReturnValue({
+      plugins: [
+        {
+          id: "manifest-only-provider",
+          providerAuth: {
+            xai: {
+              method: "api-key",
+              label: "xAI (Grok)",
+              envVars: ["XAI_API_KEY"],
+            },
+          },
+        },
+      ],
+      diagnostics: [],
+    });
+    resolvePluginProviderRegistrations.mockReturnValue([]);
+
+    vi.resetModules();
+    const { resolveDeclarativeProviderAuthSpecs } = await import("./provider-auth-manifest.js");
+    const specs = resolveDeclarativeProviderAuthSpecs();
+
+    expect(specs).toHaveLength(0);
+  });
+
   it("matches providers by normalized token-provider id", async () => {
     loadPluginManifestRegistry.mockReturnValue({
       plugins: [
@@ -74,6 +131,24 @@ describe("provider-auth-manifest", () => {
       ],
       diagnostics: [],
     });
+    resolvePluginProviderRegistrations.mockReturnValue([
+      {
+        pluginId: "zai-provider",
+        provider: {
+          id: "zai",
+          label: "Z.AI",
+          auth: [
+            {
+              id: "api-key",
+              label: "Z.AI",
+              authChoice: "plugin:zai-provider:zai:api-key",
+              kind: "api_key",
+              run: vi.fn(),
+            },
+          ],
+        },
+      },
+    ]);
 
     vi.resetModules();
     const { findDeclarativeProviderAuthByTokenProvider } =
