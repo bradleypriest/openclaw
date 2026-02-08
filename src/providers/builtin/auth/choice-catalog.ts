@@ -1,0 +1,309 @@
+import type { AuthChoice } from "../../../commands/onboard-types.js";
+
+export type BuiltinAuthChoiceCatalogEntry = {
+  choice: AuthChoice;
+  providerId: string;
+  label: string;
+  hint?: string;
+  groupId: string;
+  groupLabel: string;
+  groupHint?: string;
+  interactiveOnly?: boolean;
+  selectable?: boolean;
+};
+
+export const BUILTIN_AUTH_CHOICE_CATALOG: BuiltinAuthChoiceCatalogEntry[] = [
+  {
+    choice: "xai-api-key",
+    providerId: "xai",
+    label: "xAI (Grok) API key",
+    groupId: "xai",
+    groupLabel: "xAI (Grok)",
+    groupHint: "API key",
+  },
+  {
+    choice: "openai-codex",
+    providerId: "openai-codex",
+    label: "OpenAI Codex (ChatGPT OAuth)",
+    groupId: "openai",
+    groupLabel: "OpenAI",
+    groupHint: "Codex OAuth + API key",
+    interactiveOnly: true,
+  },
+  {
+    choice: "openai-api-key",
+    providerId: "openai",
+    label: "OpenAI API key",
+    groupId: "openai",
+    groupLabel: "OpenAI",
+    groupHint: "Codex OAuth + API key",
+  },
+  {
+    choice: "token",
+    providerId: "anthropic",
+    label: "Anthropic token (paste setup-token)",
+    hint: "run `claude setup-token` elsewhere, then paste the token here",
+    groupId: "anthropic",
+    groupLabel: "Anthropic",
+    groupHint: "setup-token + API key",
+  },
+  {
+    choice: "apiKey",
+    providerId: "anthropic",
+    label: "Anthropic API key",
+    groupId: "anthropic",
+    groupLabel: "Anthropic",
+    groupHint: "setup-token + API key",
+  },
+  {
+    choice: "minimax-portal",
+    providerId: "minimax-portal",
+    label: "MiniMax OAuth",
+    hint: "Oauth plugin for MiniMax",
+    groupId: "minimax",
+    groupLabel: "MiniMax",
+    groupHint: "M2.1 (recommended)",
+    interactiveOnly: true,
+  },
+  {
+    choice: "minimax-api",
+    providerId: "minimax",
+    label: "MiniMax M2.1",
+    groupId: "minimax",
+    groupLabel: "MiniMax",
+    groupHint: "M2.1 (recommended)",
+  },
+  {
+    choice: "minimax-api-lightning",
+    providerId: "minimax",
+    label: "MiniMax M2.1 Lightning",
+    hint: "Faster, higher output cost",
+    groupId: "minimax",
+    groupLabel: "MiniMax",
+    groupHint: "M2.1 (recommended)",
+  },
+  {
+    choice: "moonshot-api-key",
+    providerId: "moonshot",
+    label: "Kimi API key (.ai)",
+    groupId: "moonshot",
+    groupLabel: "Moonshot AI (Kimi K2.5)",
+    groupHint: "Kimi K2.5 + Kimi Coding",
+  },
+  {
+    choice: "moonshot-api-key-cn",
+    providerId: "moonshot",
+    label: "Kimi API key (.cn)",
+    groupId: "moonshot",
+    groupLabel: "Moonshot AI (Kimi K2.5)",
+    groupHint: "Kimi K2.5 + Kimi Coding",
+  },
+  {
+    choice: "kimi-code-api-key",
+    providerId: "kimi-coding",
+    label: "Kimi Code API key (subscription)",
+    groupId: "moonshot",
+    groupLabel: "Moonshot AI (Kimi K2.5)",
+    groupHint: "Kimi K2.5 + Kimi Coding",
+  },
+  {
+    choice: "gemini-api-key",
+    providerId: "google",
+    label: "Google Gemini API key",
+    groupId: "google",
+    groupLabel: "Google",
+    groupHint: "Gemini API key + OAuth",
+  },
+  {
+    choice: "google-antigravity",
+    providerId: "google-antigravity",
+    label: "Google Antigravity OAuth",
+    hint: "Uses the bundled Antigravity auth plugin",
+    groupId: "google",
+    groupLabel: "Google",
+    groupHint: "Gemini API key + OAuth",
+    interactiveOnly: true,
+  },
+  {
+    choice: "google-gemini-cli",
+    providerId: "google-gemini-cli",
+    label: "Google Gemini CLI OAuth",
+    hint: "Uses the bundled Gemini CLI auth plugin",
+    groupId: "google",
+    groupLabel: "Google",
+    groupHint: "Gemini API key + OAuth",
+    interactiveOnly: true,
+  },
+  {
+    choice: "openrouter-api-key",
+    providerId: "openrouter",
+    label: "OpenRouter API key",
+    groupId: "openrouter",
+    groupLabel: "OpenRouter",
+    groupHint: "API key",
+  },
+  {
+    choice: "qwen-portal",
+    providerId: "qwen-portal",
+    label: "Qwen OAuth",
+    groupId: "qwen",
+    groupLabel: "Qwen",
+    groupHint: "OAuth",
+    interactiveOnly: true,
+  },
+  {
+    choice: "zai-api-key",
+    providerId: "zai",
+    label: "Z.AI (GLM 4.7) API key",
+    groupId: "zai",
+    groupLabel: "Z.AI (GLM 4.7)",
+    groupHint: "API key",
+  },
+  {
+    choice: "github-copilot",
+    providerId: "github-copilot",
+    label: "GitHub Copilot (GitHub device login)",
+    hint: "Uses GitHub device flow",
+    groupId: "copilot",
+    groupLabel: "Copilot",
+    groupHint: "GitHub + local proxy",
+    interactiveOnly: true,
+  },
+  {
+    choice: "copilot-proxy",
+    providerId: "copilot-proxy",
+    label: "Copilot Proxy (local)",
+    hint: "Local proxy for VS Code Copilot models",
+    groupId: "copilot",
+    groupLabel: "Copilot",
+    groupHint: "GitHub + local proxy",
+    interactiveOnly: true,
+  },
+  {
+    choice: "ai-gateway-api-key",
+    providerId: "vercel-ai-gateway",
+    label: "Vercel AI Gateway API key",
+    groupId: "ai-gateway",
+    groupLabel: "Vercel AI Gateway",
+    groupHint: "API key",
+  },
+  {
+    choice: "opencode-zen",
+    providerId: "opencode",
+    label: "OpenCode Zen (multi-model proxy)",
+    hint: "Claude, GPT, Gemini via opencode.ai/zen",
+    groupId: "opencode-zen",
+    groupLabel: "OpenCode Zen",
+    groupHint: "API key",
+  },
+  {
+    choice: "xiaomi-api-key",
+    providerId: "xiaomi",
+    label: "Xiaomi API key",
+    groupId: "xiaomi",
+    groupLabel: "Xiaomi",
+    groupHint: "API key",
+  },
+  {
+    choice: "synthetic-api-key",
+    providerId: "synthetic",
+    label: "Synthetic API key",
+    groupId: "synthetic",
+    groupLabel: "Synthetic",
+    groupHint: "Anthropic-compatible (multi-model)",
+  },
+  {
+    choice: "venice-api-key",
+    providerId: "venice",
+    label: "Venice AI API key",
+    hint: "Privacy-focused inference (uncensored models)",
+    groupId: "venice",
+    groupLabel: "Venice AI",
+    groupHint: "Privacy-focused (uncensored models)",
+  },
+  {
+    choice: "cloudflare-ai-gateway-api-key",
+    providerId: "cloudflare-ai-gateway",
+    label: "Cloudflare AI Gateway",
+    hint: "Account ID + Gateway ID + API key",
+    groupId: "cloudflare-ai-gateway",
+    groupLabel: "Cloudflare AI Gateway",
+    groupHint: "Account ID + Gateway ID + API key",
+  },
+  {
+    choice: "chutes",
+    providerId: "chutes",
+    label: "Chutes (OAuth)",
+    groupId: "chutes",
+    groupLabel: "Chutes",
+    groupHint: "OAuth",
+    interactiveOnly: true,
+  },
+  {
+    choice: "oauth",
+    providerId: "anthropic",
+    label: "Anthropic setup-token (legacy alias)",
+    groupId: "anthropic",
+    groupLabel: "Anthropic",
+    groupHint: "setup-token + API key",
+    interactiveOnly: true,
+    selectable: false,
+  },
+  {
+    choice: "setup-token",
+    providerId: "anthropic",
+    label: "Anthropic setup-token (legacy)",
+    groupId: "anthropic",
+    groupLabel: "Anthropic",
+    groupHint: "setup-token + API key",
+    interactiveOnly: true,
+    selectable: false,
+  },
+  {
+    choice: "claude-cli",
+    providerId: "anthropic",
+    label: "Anthropic CLI token (legacy)",
+    groupId: "anthropic",
+    groupLabel: "Anthropic",
+    groupHint: "setup-token + API key",
+    interactiveOnly: true,
+    selectable: false,
+  },
+  {
+    choice: "codex-cli",
+    providerId: "openai-codex",
+    label: "OpenAI Codex CLI token (legacy)",
+    groupId: "openai",
+    groupLabel: "OpenAI",
+    groupHint: "Codex OAuth + API key",
+    interactiveOnly: true,
+    selectable: false,
+  },
+  {
+    choice: "minimax",
+    providerId: "lmstudio",
+    label: "MiniMax LM Studio (local)",
+    groupId: "minimax",
+    groupLabel: "MiniMax",
+    groupHint: "M2.1 (recommended)",
+    selectable: false,
+  },
+];
+
+const BUILTIN_AUTH_CHOICE_BY_ID = new Map(
+  BUILTIN_AUTH_CHOICE_CATALOG.map((entry) => [entry.choice, entry]),
+);
+
+export function resolveBuiltinPreferredProviderForAuthChoice(
+  choice: AuthChoice,
+): string | undefined {
+  return BUILTIN_AUTH_CHOICE_BY_ID.get(choice)?.providerId;
+}
+
+export function isBuiltinInteractiveOnlyAuthChoice(choice: AuthChoice): boolean {
+  return BUILTIN_AUTH_CHOICE_BY_ID.get(choice)?.interactiveOnly === true;
+}
+
+export function listBuiltinAuthChoiceCatalogEntries(): BuiltinAuthChoiceCatalogEntry[] {
+  return [...BUILTIN_AUTH_CHOICE_CATALOG];
+}

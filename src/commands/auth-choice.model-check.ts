@@ -6,7 +6,7 @@ import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../agents/defaults.js";
 import { getCustomProviderApiKey, resolveEnvApiKey } from "../agents/model-auth.js";
 import { loadModelCatalog } from "../agents/model-catalog.js";
 import { resolveConfiguredModelRef } from "../agents/model-selection.js";
-import { OPENAI_CODEX_DEFAULT_MODEL } from "./openai-codex-model-default.js";
+import { resolveProviderModelConfigWarning } from "../providers/builtin/auth/provider-advisories.js";
 
 export async function warnIfModelConfigLooksOff(
   config: OpenClawConfig,
@@ -65,13 +65,9 @@ export async function warnIfModelConfigLooksOff(
     );
   }
 
-  if (ref.provider === "openai") {
-    const hasCodex = listProfilesForProvider(store, "openai-codex").length > 0;
-    if (hasCodex) {
-      warnings.push(
-        `Detected OpenAI Codex OAuth. Consider setting agents.defaults.model to ${OPENAI_CODEX_DEFAULT_MODEL}.`,
-      );
-    }
+  const providerWarning = resolveProviderModelConfigWarning(ref.provider, store);
+  if (providerWarning) {
+    warnings.push(providerWarning);
   }
 
   if (warnings.length > 0) {

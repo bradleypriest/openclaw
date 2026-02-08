@@ -5,6 +5,7 @@ import { normalizeProviderId } from "../../agents/model-selection.js";
 import { formatCliCommand } from "../../cli/command-format.js";
 import { resolveGatewayPort, writeConfigFile } from "../../config/config.js";
 import { logConfigUpdated } from "../../config/logging.js";
+import { resolveBuiltinApiKeyOptionKeyByProvider } from "../../providers/builtin/non-interactive/api-key-shortcuts.js";
 import { DEFAULT_GATEWAY_DAEMON_RUNTIME } from "../daemon-runtime.js";
 import { healthCommand } from "../health.js";
 import {
@@ -109,37 +110,10 @@ export async function runNonInteractiveOnboardingLocal(params: {
     }
     opts.token = apiKeyShortcut;
 
-    const provider = normalizeProviderId(resolvedProviderId ?? "");
-    if (provider === "anthropic") {
-      opts.anthropicApiKey ??= apiKeyShortcut;
-    } else if (provider === "openai") {
-      opts.openaiApiKey ??= apiKeyShortcut;
-    } else if (provider === "openrouter") {
-      opts.openrouterApiKey ??= apiKeyShortcut;
-    } else if (provider === "vercel-ai-gateway") {
-      opts.aiGatewayApiKey ??= apiKeyShortcut;
-    } else if (provider === "cloudflare-ai-gateway") {
-      opts.cloudflareAiGatewayApiKey ??= apiKeyShortcut;
-    } else if (provider === "moonshot") {
-      opts.moonshotApiKey ??= apiKeyShortcut;
-    } else if (provider === "kimi-code" || provider === "kimi-coding") {
-      opts.kimiCodeApiKey ??= apiKeyShortcut;
-    } else if (provider === "google") {
-      opts.geminiApiKey ??= apiKeyShortcut;
-    } else if (provider === "zai") {
-      opts.zaiApiKey ??= apiKeyShortcut;
-    } else if (provider === "xiaomi") {
-      opts.xiaomiApiKey ??= apiKeyShortcut;
-    } else if (provider === "xai") {
-      opts.xaiApiKey ??= apiKeyShortcut;
-    } else if (provider === "synthetic") {
-      opts.syntheticApiKey ??= apiKeyShortcut;
-    } else if (provider === "venice") {
-      opts.veniceApiKey ??= apiKeyShortcut;
-    } else if (provider === "minimax") {
-      opts.minimaxApiKey ??= apiKeyShortcut;
-    } else if (provider === "opencode") {
-      opts.opencodeZenApiKey ??= apiKeyShortcut;
+    const optionKey = resolveBuiltinApiKeyOptionKeyByProvider(resolvedProviderId);
+    if (optionKey) {
+      const values = opts as Record<string, unknown>;
+      values[optionKey] ??= apiKeyShortcut;
     }
   }
 

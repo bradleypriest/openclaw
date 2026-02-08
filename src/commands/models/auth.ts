@@ -19,9 +19,13 @@ import { parseDurationMs } from "../../cli/parse-duration.js";
 import { readConfigFileSnapshot, type OpenClawConfig } from "../../config/config.js";
 import { logConfigUpdated } from "../../config/logging.js";
 import { resolvePluginProviders } from "../../plugins/providers.js";
+import {
+  listBuiltinSetupTokenProviderSpecs,
+  resolveBuiltinSetupTokenProviderSpec,
+  type BuiltinSetupTokenProviderSpec,
+} from "../../providers/builtin/auth/setup-token-providers.js";
 import { stylePromptHint, stylePromptMessage } from "../../terminal/prompt-style.js";
 import { createClackPrompter } from "../../wizard/clack-prompter.js";
-import { validateAnthropicSetupToken } from "../auth-token.js";
 import { isRemoteEnvironment } from "../oauth-env.js";
 import { createVpsAwareOAuthHandlers } from "../oauth-flow.js";
 import { applyAuthProfileConfig } from "../onboard-auth.js";
@@ -47,18 +51,12 @@ const select = <T>(params: Parameters<typeof clackSelect<T>>[0]) =>
     ),
   });
 
-type TokenProvider = "anthropic";
-
-function resolveTokenProvider(raw?: string): TokenProvider | "custom" | null {
+function resolveSetupTokenProvider(raw?: string): BuiltinSetupTokenProviderSpec | null {
   const trimmed = raw?.trim();
   if (!trimmed) {
     return null;
   }
-  const normalized = normalizeProviderId(trimmed);
-  if (normalized === "anthropic") {
-    return "anthropic";
-  }
-  return "custom";
+  return resolveBuiltinSetupTokenProviderSpec(trimmed) ?? null;
 }
 
 function resolveDefaultTokenProfileId(provider: string): string {
@@ -69,10 +67,14 @@ export async function modelsAuthSetupTokenCommand(
   opts: { provider?: string; yes?: boolean },
   runtime: RuntimeEnv,
 ) {
-  const provider = resolveTokenProvider(opts.provider ?? "anthropic");
-  if (provider !== "anthropic") {
-    throw new Error("Only --provider anthropic is supported for setup-token.");
+  const setupProviders = listBuiltinSetupTokenProviderSpecs();
+  const defaultProvider = setupProviders[0]?.providerId;
+  const setupProvider = resolveSetupTokenProvider(opts.provider ?? defaultProvider);
+  if (!setupProvider) {
+    const supported = setupProviders.map((entry) => entry.providerId).join(", ");
+    throw new Error(`Unsupported --provider for setup-token. Supported: ${supported}`);
   }
+  const provider = setupProvider.providerId;
 
   if (!process.stdin.isTTY) {
     throw new Error("setup-token requires an interactive TTY.");
@@ -80,7 +82,7 @@ export async function modelsAuthSetupTokenCommand(
 
   if (!opts.yes) {
     const proceed = await confirm({
-      message: "Have you run `claude setup-token` and copied the token?",
+      message: setupProvider.confirmMessage,
       initialValue: true,
     });
     if (!proceed) {
@@ -89,8 +91,8 @@ export async function modelsAuthSetupTokenCommand(
   }
 
   const tokenInput = await text({
-    message: "Paste Anthropic setup-token",
-    validate: (value) => validateAnthropicSetupToken(String(value ?? "")),
+    message: setupProvider.tokenPrompt,
+    validate: (value) => setupProvider.validateToken(String(value ?? "")),
   });
   const token = String(tokenInput).trim();
   const profileId = resolveDefaultTokenProfileId(provider);
@@ -159,13 +161,14 @@ export async function modelsAuthPasteTokenCommand(
 }
 
 export async function modelsAuthAddCommand(_opts: Record<string, never>, runtime: RuntimeEnv) {
+  const setupTokenProviders = listBuiltinSetupTokenProviderSpecs();
   const provider = (await select({
     message: "Token provider",
     options: [
-      { value: "anthropic", label: "anthropic" },
+      ...setupTokenProviders.map((entry) => ({ value: entry.providerId, label: entry.label })),
       { value: "custom", label: "custom (type provider id)" },
     ],
-  })) as TokenProvider | "custom";
+  })) as string;
 
   const providerId =
     provider === "custom"
@@ -179,15 +182,17 @@ export async function modelsAuthAddCommand(_opts: Record<string, never>, runtime
         )
       : provider;
 
+  const setupTokenProvider = resolveBuiltinSetupTokenProviderSpec(providerId);
+
   const method = (await select({
     message: "Token method",
     options: [
-      ...(providerId === "anthropic"
+      ...(setupTokenProvider
         ? [
             {
               value: "setup-token",
-              label: "setup-token (claude)",
-              hint: "Paste a setup-token from `claude setup-token`",
+              label: setupTokenProvider.methodLabel,
+              hint: setupTokenProvider.methodHint,
             },
           ]
         : []),

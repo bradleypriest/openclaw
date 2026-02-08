@@ -1,4 +1,5 @@
 type CustomEntryLike = { type?: unknown; customType?: unknown; data?: unknown };
+import { isCacheTtlEligibleProvider as isBuiltinCacheTtlEligibleProvider } from "../../providers/builtin/runtime-capabilities.js";
 
 export const CACHE_TTL_CUSTOM_TYPE = "openclaw.cache-ttl";
 
@@ -9,15 +10,7 @@ export type CacheTtlEntryData = {
 };
 
 export function isCacheTtlEligibleProvider(provider: string, modelId: string): boolean {
-  const normalizedProvider = provider.toLowerCase();
-  const normalizedModelId = modelId.toLowerCase();
-  if (normalizedProvider === "anthropic") {
-    return true;
-  }
-  if (normalizedProvider === "openrouter" && normalizedModelId.startsWith("anthropic/")) {
-    return true;
-  }
-  return false;
+  return isBuiltinCacheTtlEligibleProvider({ provider, modelId });
 }
 
 export function readLastCacheTtlTimestamp(sessionManager: unknown): number | null {

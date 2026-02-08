@@ -11,6 +11,7 @@ import {
 } from "../../agents/model-auth.js";
 import { ensureOpenClawModelsJson } from "../../agents/models-config.js";
 import { discoverAuthStorage, discoverModels } from "../../agents/pi-model-discovery.js";
+import { resolveBuiltinDefaultAuthMode } from "../../providers/builtin/auth/default-auth-mode.js";
 import { modelKey } from "./shared.js";
 
 const isLocalBaseUrl = (baseUrl: string) => {
@@ -33,7 +34,7 @@ const hasAuthForProvider = (provider: string, cfg: OpenClawConfig, authStore: Au
   if (listProfilesForProvider(authStore, provider).length > 0) {
     return true;
   }
-  if (provider === "amazon-bedrock" && resolveAwsSdkEnvVarName()) {
+  if (resolveBuiltinDefaultAuthMode(provider) === "aws-sdk" && resolveAwsSdkEnvVarName()) {
     return true;
   }
   if (resolveEnvApiKey(provider)) {

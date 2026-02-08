@@ -2,7 +2,7 @@ import type { OpenClawConfig } from "../config/config.js";
 import type { RuntimeEnv } from "../runtime.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
 import type { AuthChoice } from "./onboard-types.js";
-import { BUILTIN_INTERACTIVE_AUTH_HANDLERS } from "../providers/builtin/auth/interactive-handler-registry.js";
+import { getBuiltinInteractiveAuthHandlers } from "../providers/builtin/auth/interactive-handler-registry.js";
 
 export type ApplyAuthChoiceParams = {
   authChoice: AuthChoice;
@@ -34,7 +34,7 @@ export type ApplyAuthChoiceHandler = (
 export async function applyAuthChoice(
   params: ApplyAuthChoiceParams,
 ): Promise<ApplyAuthChoiceResult> {
-  for (const handler of BUILTIN_INTERACTIVE_AUTH_HANDLERS) {
+  for (const handler of getBuiltinInteractiveAuthHandlers()) {
     const result = await handler(params);
     if (result) {
       return result;

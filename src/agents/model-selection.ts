@@ -1,8 +1,10 @@
 import type { OpenClawConfig } from "../config/config.js";
 import type { ModelCatalogEntry } from "./model-catalog.js";
+import { ensureBuiltinProviderModelNormalizersRegistered } from "../providers/builtin/model-normalizer-registry.js";
+import { normalizeModelIdForProvider } from "../providers/model-normalizers.js";
+import { normalizeProviderId as normalizeProviderIdBase } from "../providers/provider-id.js";
 import { resolveAgentModelPrimary } from "./agent-scope.js";
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "./defaults.js";
-import { normalizeGoogleModelId } from "./models-config.providers.js";
 
 export type ModelRef = {
   provider: string;
@@ -16,12 +18,6 @@ export type ModelAliasIndex = {
   byKey: Map<string, string[]>;
 };
 
-const ANTHROPIC_MODEL_ALIASES: Record<string, string> = {
-  "opus-4.6": "claude-opus-4-6",
-  "opus-4.5": "claude-opus-4-5",
-  "sonnet-4.5": "claude-sonnet-4-5",
-};
-
 function normalizeAliasKey(value: string): string {
   return value.trim().toLowerCase();
 }
@@ -31,20 +27,7 @@ export function modelKey(provider: string, model: string) {
 }
 
 export function normalizeProviderId(provider: string): string {
-  const normalized = provider.trim().toLowerCase();
-  if (normalized === "z.ai" || normalized === "z-ai") {
-    return "zai";
-  }
-  if (normalized === "opencode-zen") {
-    return "opencode";
-  }
-  if (normalized === "qwen") {
-    return "qwen-portal";
-  }
-  if (normalized === "kimi-code") {
-    return "kimi-coding";
-  }
-  return normalized;
+  return normalizeProviderIdBase(provider);
 }
 
 export function isCliProvider(provider: string, cfg?: OpenClawConfig): boolean {
@@ -59,23 +42,9 @@ export function isCliProvider(provider: string, cfg?: OpenClawConfig): boolean {
   return Object.keys(backends).some((key) => normalizeProviderId(key) === normalized);
 }
 
-function normalizeAnthropicModelId(model: string): string {
-  const trimmed = model.trim();
-  if (!trimmed) {
-    return trimmed;
-  }
-  const lower = trimmed.toLowerCase();
-  return ANTHROPIC_MODEL_ALIASES[lower] ?? trimmed;
-}
-
 function normalizeProviderModelId(provider: string, model: string): string {
-  if (provider === "anthropic") {
-    return normalizeAnthropicModelId(model);
-  }
-  if (provider === "google") {
-    return normalizeGoogleModelId(model);
-  }
-  return model;
+  ensureBuiltinProviderModelNormalizersRegistered();
+  return normalizeModelIdForProvider(provider, model);
 }
 
 export function parseModelRef(raw: string, defaultProvider: string): ModelRef | null {
@@ -204,9 +173,9 @@ export function resolveConfiguredModelRef(params: {
 
       // Default to anthropic if no provider is specified, but warn as this is deprecated.
       console.warn(
-        `[openclaw] Model "${trimmed}" specified without provider. Falling back to "anthropic/${trimmed}". Please use "anthropic/${trimmed}" in your config.`,
+        `[openclaw] Model "${trimmed}" specified without provider. Falling back to "${DEFAULT_PROVIDER}/${trimmed}". Please use "${DEFAULT_PROVIDER}/${trimmed}" in your config.`,
       );
-      return { provider: "anthropic", model: trimmed };
+      return { provider: DEFAULT_PROVIDER, model: trimmed };
     }
 
     const resolved = resolveModelRefFromString({

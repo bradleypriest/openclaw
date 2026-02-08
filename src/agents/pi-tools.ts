@@ -11,6 +11,7 @@ import type { AnyAgentTool } from "./pi-tools.types.js";
 import type { SandboxContext } from "./sandbox.js";
 import { logWarn } from "../logger.js";
 import { getPluginToolMeta } from "../plugins/tools.js";
+import { isOpenAiFamilyProvider } from "../providers/builtin/runtime-capabilities.js";
 import { isSubagentSessionKey } from "../routing/session-key.js";
 import { resolveGatewayMessageChannel } from "../utils/message-channel.js";
 import { createApplyPatchTool } from "./apply-patch.js";
@@ -54,8 +55,7 @@ import {
 } from "./tool-policy.js";
 
 function isOpenAIProvider(provider?: string) {
-  const normalized = provider?.trim().toLowerCase();
-  return normalized === "openai" || normalized === "openai-codex";
+  return isOpenAiFamilyProvider(provider);
 }
 
 function isApplyPatchAllowedForModel(params: {

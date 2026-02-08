@@ -12,6 +12,7 @@ import {
   BUILTIN_NON_INTERACTIVE_API_KEY_BY_AUTH_CHOICE,
   resolveBuiltinApiKeyAuthChoiceByProvider,
 } from "../../../providers/builtin/api-key/non-interactive-specs.js";
+import { isBuiltinInteractiveOnlyAuthChoice } from "../../../providers/builtin/auth/choice-catalog.js";
 import { applyMiniMaxNonInteractiveAuthChoice } from "../../../providers/builtin/minimax/non-interactive-auth.js";
 import { applyOpenAINonInteractiveAuthChoice } from "../../../providers/builtin/openai/non-interactive-auth.js";
 import { applyAuthProfileConfig, writeApiKeyCredential } from "../../onboard-auth.js";
@@ -288,13 +289,13 @@ export async function applyNonInteractiveAuthChoice(params: {
     });
   }
 
-  if (
-    authChoice === "oauth" ||
-    authChoice === "chutes" ||
-    authChoice === "openai-codex" ||
-    authChoice === "qwen-portal" ||
-    authChoice === "minimax-portal"
-  ) {
+  if (declarativeChoice) {
+    runtime.error("OAuth requires interactive mode.");
+    runtime.exit(1);
+    return null;
+  }
+
+  if (isBuiltinInteractiveOnlyAuthChoice(authChoice)) {
     runtime.error("OAuth requires interactive mode.");
     runtime.exit(1);
     return null;

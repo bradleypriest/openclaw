@@ -2,6 +2,10 @@ import type { StreamFn } from "@mariozechner/pi-agent-core";
 import type { SimpleStreamOptions } from "@mariozechner/pi-ai";
 import { streamSimple } from "@mariozechner/pi-ai";
 import type { OpenClawConfig } from "../../config/config.js";
+import {
+  isOpenRouterProvider,
+  supportsCacheRetentionStreamParam,
+} from "../../providers/builtin/runtime-capabilities.js";
 import { log } from "./logger.js";
 
 const OPENROUTER_APP_HEADERS: Record<string, string> = {
@@ -43,7 +47,7 @@ function resolveCacheRetention(
   extraParams: Record<string, unknown> | undefined,
   provider: string,
 ): CacheRetention | undefined {
-  if (provider !== "anthropic") {
+  if (!supportsCacheRetentionStreamParam(provider)) {
     return undefined;
   }
 
@@ -149,7 +153,7 @@ export function applyExtraParamsToAgent(
     agent.streamFn = wrappedStreamFn;
   }
 
-  if (provider === "openrouter") {
+  if (isOpenRouterProvider(provider)) {
     log.debug(`applying OpenRouter app attribution headers for ${provider}/${modelId}`);
     agent.streamFn = createOpenRouterHeadersWrapper(agent.streamFn);
   }

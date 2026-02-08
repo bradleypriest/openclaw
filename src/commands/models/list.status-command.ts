@@ -34,6 +34,12 @@ import {
   type UsageProviderId,
 } from "../../infra/provider-usage.js";
 import { getShellEnvAppliedKeys, shouldEnableShellEnvFallback } from "../../infra/shell-env.js";
+import {
+  listProviderEnvApiKeyResolverProviders,
+  listProviderEnvVarCandidateProviders,
+} from "../../providers/auth-env-vars.js";
+import { resolveMissingProviderAuthHint } from "../../providers/builtin/auth/provider-advisories.js";
+import { ensureBuiltinProviderEnvApiKeyResolversRegistered } from "../../providers/builtin/env-resolvers.js";
 import { renderTable } from "../../terminal/table.js";
 import { colorize, theme } from "../../terminal/theme.js";
 import { shortenHomePath } from "../../utils.js";
@@ -146,21 +152,10 @@ export async function modelsStatusCommand(
   }
 
   const providersFromEnv = new Set<string>();
-  // Keep in sync with resolveEnvApiKey() mappings (we want visibility even when
-  // a provider isn't currently selected in config/models).
+  ensureBuiltinProviderEnvApiKeyResolversRegistered();
   const envProbeProviders = [
-    "anthropic",
-    "github-copilot",
-    "google-vertex",
-    "openai",
-    "google",
-    "groq",
-    "cerebras",
-    "xai",
-    "openrouter",
-    "zai",
-    "mistral",
-    "synthetic",
+    ...listProviderEnvVarCandidateProviders(),
+    ...listProviderEnvApiKeyResolverProviders(),
   ];
   for (const provider of envProbeProviders) {
     if (resolveEnvApiKey(provider)) {
@@ -540,10 +535,10 @@ export async function modelsStatusCommand(
     runtime.log("");
     runtime.log(colorize(rich, theme.heading, "Missing auth"));
     for (const provider of missingProvidersInUse) {
+      const providerHint = resolveMissingProviderAuthHint(provider);
       const hint =
-        provider === "anthropic"
-          ? `Run \`claude setup-token\`, then \`${formatCliCommand("openclaw models auth setup-token")}\` or \`${formatCliCommand("openclaw configure")}\`.`
-          : `Run \`${formatCliCommand("openclaw configure")}\` or set an API key env var.`;
+        providerHint ??
+        `Run \`${formatCliCommand("openclaw configure")}\` or set an API key env var.`;
       runtime.log(`- ${theme.heading(provider)} ${hint}`);
     }
   }

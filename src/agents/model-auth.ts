@@ -6,10 +6,11 @@ import { formatCliCommand } from "../cli/command-format.js";
 import { getShellEnvAppliedKeys } from "../infra/shell-env.js";
 import { resolveProviderEnvApiKey } from "../providers/auth-env-vars.js";
 import {
-  isAmazonBedrockProvider,
   resolveAmazonBedrockAwsSdkAuthInfo,
   resolveAwsSdkEnvVarName as resolveAmazonBedrockAwsSdkEnvVarName,
 } from "../providers/builtin/amazon-bedrock/auth.js";
+import { resolveBuiltinDefaultAuthMode } from "../providers/builtin/auth/default-auth-mode.js";
+import { resolveProviderMissingApiKeyError } from "../providers/builtin/auth/provider-advisories.js";
 import { ensureBuiltinProviderEnvApiKeyResolversRegistered } from "../providers/builtin/env-resolvers.js";
 import {
   type AuthProfileStore,
@@ -66,6 +67,17 @@ function resolveProviderAuthOverride(
   return undefined;
 }
 
+function resolveEffectiveAuthMode(
+  cfg: OpenClawConfig | undefined,
+  provider: string,
+): ModelProviderAuthMode | undefined {
+  const override = resolveProviderAuthOverride(cfg, provider);
+  if (override) {
+    return override;
+  }
+  return resolveBuiltinDefaultAuthMode(provider);
+}
+
 export function resolveAwsSdkEnvVarName(env: NodeJS.ProcessEnv = process.env): string | undefined {
   return resolveAmazonBedrockAwsSdkEnvVarName(env);
 }
@@ -107,8 +119,8 @@ export async function resolveApiKeyForProvider(params: {
     };
   }
 
-  const authOverride = resolveProviderAuthOverride(cfg, provider);
-  if (authOverride === "aws-sdk") {
+  const authMode = resolveEffectiveAuthMode(cfg, provider);
+  if (authMode === "aws-sdk") {
     return resolveAmazonBedrockAwsSdkAuthInfo();
   }
 
@@ -152,17 +164,9 @@ export async function resolveApiKeyForProvider(params: {
     return { apiKey: customKey, source: "models.json", mode: "api-key" };
   }
 
-  if (authOverride === undefined && isAmazonBedrockProvider(provider)) {
-    return resolveAmazonBedrockAwsSdkAuthInfo();
-  }
-
-  if (provider === "openai") {
-    const hasCodex = listProfilesForProvider(store, "openai-codex").length > 0;
-    if (hasCodex) {
-      throw new Error(
-        'No API key found for provider "openai". You are authenticated with OpenAI Codex OAuth. Use openai-codex/gpt-5.3-codex (OAuth) or set OPENAI_API_KEY to use openai/gpt-5.1-codex.',
-      );
-    }
+  const providerSpecificError = resolveProviderMissingApiKeyError(provider, store);
+  if (providerSpecificError) {
+    throw new Error(providerSpecificError);
   }
 
   const authStorePath = resolveAuthStorePathForDisplay(params.agentDir);
@@ -208,8 +212,8 @@ export function resolveModelAuthMode(
     return undefined;
   }
 
-  const authOverride = resolveProviderAuthOverride(cfg, resolved);
-  if (authOverride === "aws-sdk") {
+  const authMode = resolveEffectiveAuthMode(cfg, resolved);
+  if (authMode === "aws-sdk") {
     return "aws-sdk";
   }
 
@@ -236,10 +240,6 @@ export function resolveModelAuthMode(
     if (modes.has("api_key")) {
       return "api-key";
     }
-  }
-
-  if (authOverride === undefined && isAmazonBedrockProvider(resolved)) {
-    return "aws-sdk";
   }
 
   const envKey = resolveEnvApiKey(resolved);

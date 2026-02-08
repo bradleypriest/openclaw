@@ -1,5 +1,5 @@
 import type { AudioTranscriptionRequest, AudioTranscriptionResult } from "../../types.js";
-import { normalizeGoogleModelId } from "../../../agents/models-config.providers.js";
+import { normalizeGoogleProviderModelId } from "../../../providers/builtin/google/model-normalize.js";
 import { fetchWithTimeoutGuarded, normalizeBaseUrl, readErrorResponse } from "../shared.js";
 
 export const DEFAULT_GOOGLE_AUDIO_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
@@ -11,7 +11,7 @@ function resolveModel(model?: string): string {
   if (!trimmed) {
     return DEFAULT_GOOGLE_AUDIO_MODEL;
   }
-  return normalizeGoogleModelId(trimmed);
+  return normalizeGoogleProviderModelId(trimmed);
 }
 
 function resolvePrompt(prompt?: string): string {

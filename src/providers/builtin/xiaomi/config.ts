@@ -1,10 +1,7 @@
 import type { OpenClawConfig } from "../../../config/config.js";
-import {
-  buildXiaomiProvider,
-  XIAOMI_DEFAULT_MODEL_ID,
-} from "../../../agents/models-config.providers.js";
 import { XIAOMI_DEFAULT_MODEL_REF } from "../../../commands/onboard-auth.credentials.js";
 import { applyPrimaryDefaultModel } from "../default-model.js";
+import { buildXiaomiProvider, XIAOMI_DEFAULT_MODEL_ID } from "../implicit-providers.js";
 
 export function applyXiaomiProviderConfig(cfg: OpenClawConfig): OpenClawConfig {
   const models = { ...cfg.agents?.defaults?.models };

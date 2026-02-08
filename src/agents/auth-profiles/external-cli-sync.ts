@@ -1,5 +1,10 @@
 import type { AuthProfileCredential, AuthProfileStore, OAuthCredential } from "./types.js";
 import {
+  EXTERNAL_CLI_MINIMAX_PROVIDER_ID,
+  EXTERNAL_CLI_QWEN_PROVIDER_ID,
+  isExternalCliOAuthProvider,
+} from "../../providers/builtin/auth/external-cli-providers.js";
+import {
   readQwenCliCredentialsCached,
   readMiniMaxCliCredentialsCached,
 } from "../cli-credentials.js";
@@ -37,7 +42,7 @@ function isExternalProfileFresh(cred: AuthProfileCredential | undefined, now: nu
   if (cred.type !== "oauth" && cred.type !== "token") {
     return false;
   }
-  if (cred.provider !== "qwen-portal" && cred.provider !== "minimax-portal") {
+  if (!isExternalCliOAuthProvider(cred.provider)) {
     return false;
   }
   if (typeof cred.expires !== "number") {
@@ -94,7 +99,7 @@ export function syncExternalCliCredentials(store: AuthProfileStore): boolean {
   const existingQwen = store.profiles[QWEN_CLI_PROFILE_ID];
   const shouldSyncQwen =
     !existingQwen ||
-    existingQwen.provider !== "qwen-portal" ||
+    existingQwen.provider !== EXTERNAL_CLI_QWEN_PROVIDER_ID ||
     !isExternalProfileFresh(existingQwen, now);
   const qwenCreds = shouldSyncQwen
     ? readQwenCliCredentialsCached({ ttlMs: EXTERNAL_CLI_SYNC_TTL_MS })
@@ -104,7 +109,7 @@ export function syncExternalCliCredentials(store: AuthProfileStore): boolean {
     const existingOAuth = existing?.type === "oauth" ? existing : undefined;
     const shouldUpdate =
       !existingOAuth ||
-      existingOAuth.provider !== "qwen-portal" ||
+      existingOAuth.provider !== EXTERNAL_CLI_QWEN_PROVIDER_ID ||
       existingOAuth.expires <= now ||
       qwenCreds.expires > existingOAuth.expires;
 
@@ -123,7 +128,7 @@ export function syncExternalCliCredentials(store: AuthProfileStore): boolean {
     syncExternalCliCredentialsForProvider(
       store,
       MINIMAX_CLI_PROFILE_ID,
-      "minimax-portal",
+      EXTERNAL_CLI_MINIMAX_PROVIDER_ID,
       () => readMiniMaxCliCredentialsCached({ ttlMs: EXTERNAL_CLI_SYNC_TTL_MS }),
       now,
     )

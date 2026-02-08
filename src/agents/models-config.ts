@@ -3,6 +3,8 @@ import path from "node:path";
 import { type OpenClawConfig, loadConfig } from "../config/config.js";
 import { resolveOpenClawAgentDir } from "./agent-paths.js";
 import {
+  BUILTIN_IMPLICIT_BEDROCK_PROVIDER_ID,
+  BUILTIN_IMPLICIT_COPILOT_PROVIDER_ID,
   normalizeProviders,
   type ProviderConfig,
   resolveImplicitBedrockProvider,
@@ -96,14 +98,14 @@ export async function ensureOpenClawModelsJson(
   });
   const implicitBedrock = await resolveImplicitBedrockProvider({ agentDir, config: cfg });
   if (implicitBedrock) {
-    const existing = providers["amazon-bedrock"];
-    providers["amazon-bedrock"] = existing
+    const existing = providers[BUILTIN_IMPLICIT_BEDROCK_PROVIDER_ID];
+    providers[BUILTIN_IMPLICIT_BEDROCK_PROVIDER_ID] = existing
       ? mergeProviderModels(implicitBedrock, existing)
       : implicitBedrock;
   }
   const implicitCopilot = await resolveImplicitCopilotProvider({ agentDir });
-  if (implicitCopilot && !providers["github-copilot"]) {
-    providers["github-copilot"] = implicitCopilot;
+  if (implicitCopilot && !providers[BUILTIN_IMPLICIT_COPILOT_PROVIDER_ID]) {
+    providers[BUILTIN_IMPLICIT_COPILOT_PROVIDER_ID] = implicitCopilot;
   }
 
   if (Object.keys(providers).length === 0) {
