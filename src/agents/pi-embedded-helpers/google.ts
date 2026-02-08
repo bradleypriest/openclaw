@@ -1,9 +1,11 @@
+import {
+  isAntigravityClaudeModel,
+  isGoogleModelApi as isBuiltinGoogleModelApi,
+} from "../../providers/builtin/runtime-capabilities.js";
 import { sanitizeGoogleTurnOrdering } from "./bootstrap.js";
 
 export function isGoogleModelApi(api?: string | null): boolean {
-  return (
-    api === "google-gemini-cli" || api === "google-generative-ai" || api === "google-antigravity"
-  );
+  return isBuiltinGoogleModelApi(api);
 }
 
 export function isAntigravityClaude(params: {
@@ -13,10 +15,11 @@ export function isAntigravityClaude(params: {
 }): boolean {
   const provider = params.provider?.toLowerCase();
   const api = params.api?.toLowerCase();
-  if (provider !== "google-antigravity" && api !== "google-antigravity") {
-    return false;
-  }
-  return params.modelId?.toLowerCase().includes("claude") ?? false;
+  return isAntigravityClaudeModel({
+    provider,
+    api,
+    modelId: params.modelId,
+  });
 }
 
 export { sanitizeGoogleTurnOrdering };

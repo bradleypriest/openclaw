@@ -4,6 +4,12 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import type { OpenClawConfig } from "../../config/config.js";
 import type { AnyAgentTool } from "./common.js";
+import {
+  ANTHROPIC_IMAGE_FALLBACK_MODEL_REF,
+  OPENAI_IMAGE_MODEL_REF,
+  resolveBuiltinCrossProviderVisionModel,
+  resolveBuiltinPreferredVisionModel,
+} from "../../providers/builtin/image-tool.js";
 import { resolveUserPath } from "../../utils.js";
 import { loadWebMedia } from "../../web/media.js";
 import { ensureAuthProfileStore, listProfilesForProvider } from "../auth-profiles.js";
@@ -24,8 +30,6 @@ import {
 } from "./image-tool.helpers.js";
 
 const DEFAULT_PROMPT = "Describe the image.";
-const ANTHROPIC_IMAGE_PRIMARY = "anthropic/claude-opus-4-6";
-const ANTHROPIC_IMAGE_FALLBACK = "anthropic/claude-opus-4-5";
 
 export const __testing = {
   decodeDataUrl,
@@ -79,11 +83,11 @@ export function resolveImageModelConfigForTool(params: {
   }
 
   const primary = resolveDefaultModelRef(params.cfg);
-  const openaiOk = hasAuthForProvider({
+  const openAiHasAuth = hasAuthForProvider({
     provider: "openai",
     agentDir: params.agentDir,
   });
-  const anthropicOk = hasAuthForProvider({
+  const anthropicHasAuth = hasAuthForProvider({
     provider: "anthropic",
     agentDir: params.agentDir,
   });
@@ -111,23 +115,20 @@ export function resolveImageModelConfigForTool(params: {
 
   let preferred: string | null = null;
 
-  // MiniMax users: always try the canonical vision model first when auth exists.
-  if (primary.provider === "minimax" && providerOk) {
-    preferred = "minimax/MiniMax-VL-01";
-  } else if (providerOk && providerVisionFromConfig) {
-    preferred = providerVisionFromConfig;
-  } else if (primary.provider === "openai" && openaiOk) {
-    preferred = "openai/gpt-5-mini";
-  } else if (primary.provider === "anthropic" && anthropicOk) {
-    preferred = ANTHROPIC_IMAGE_PRIMARY;
-  }
+  preferred = resolveBuiltinPreferredVisionModel({
+    provider: primary.provider,
+    providerHasAuth: providerOk,
+    providerVisionFromConfig,
+    openAiHasAuth,
+    anthropicHasAuth,
+  });
 
   if (preferred?.trim()) {
-    if (openaiOk) {
-      addFallback("openai/gpt-5-mini");
+    if (openAiHasAuth) {
+      addFallback(OPENAI_IMAGE_MODEL_REF);
     }
-    if (anthropicOk) {
-      addFallback(ANTHROPIC_IMAGE_FALLBACK);
+    if (anthropicHasAuth) {
+      addFallback(ANTHROPIC_IMAGE_FALLBACK_MODEL_REF);
     }
     // Don't duplicate primary in fallbacks.
     const pruned = fallbacks.filter((ref) => ref !== preferred);
@@ -138,19 +139,19 @@ export function resolveImageModelConfigForTool(params: {
   }
 
   // Cross-provider fallback when we can't pair with the primary provider.
-  if (openaiOk) {
-    if (anthropicOk) {
-      addFallback(ANTHROPIC_IMAGE_FALLBACK);
+  const crossProvider = resolveBuiltinCrossProviderVisionModel({
+    openAiHasAuth,
+    anthropicHasAuth,
+  });
+  if (crossProvider) {
+    if (crossProvider.fallbacks) {
+      for (const fallback of crossProvider.fallbacks) {
+        addFallback(fallback);
+      }
     }
     return {
-      primary: "openai/gpt-5-mini",
+      primary: crossProvider.primary,
       ...(fallbacks.length ? { fallbacks } : {}),
-    };
-  }
-  if (anthropicOk) {
-    return {
-      primary: ANTHROPIC_IMAGE_PRIMARY,
-      fallbacks: [ANTHROPIC_IMAGE_FALLBACK],
     };
   }
 

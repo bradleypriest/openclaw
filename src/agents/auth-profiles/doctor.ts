@@ -1,6 +1,10 @@
 import type { OpenClawConfig } from "../../config/config.js";
 import type { AuthProfileStore } from "./types.js";
 import { formatCliCommand } from "../../cli/command-format.js";
+import {
+  LEGACY_ANTHROPIC_DEFAULT_PROFILE_ID,
+  supportsLegacyDefaultOAuthProfile,
+} from "../../providers/builtin/auth/legacy-profiles.js";
 import { normalizeProviderId } from "../model-selection.js";
 import { listProfilesForProvider } from "./profiles.js";
 import { suggestOAuthProfileIdForLegacyDefault } from "./repair.js";
@@ -12,11 +16,11 @@ export function formatAuthDoctorHint(params: {
   profileId?: string;
 }): string {
   const providerKey = normalizeProviderId(params.provider);
-  if (providerKey !== "anthropic") {
+  if (!supportsLegacyDefaultOAuthProfile(providerKey)) {
     return "";
   }
 
-  const legacyProfileId = params.profileId ?? "anthropic:default";
+  const legacyProfileId = params.profileId ?? LEGACY_ANTHROPIC_DEFAULT_PROFILE_ID;
   const suggested = suggestOAuthProfileIdForLegacyDefault({
     cfg: params.cfg,
     store: params.store,

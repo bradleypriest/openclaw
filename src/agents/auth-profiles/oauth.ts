@@ -7,8 +7,8 @@ import {
 import lockfile from "proper-lockfile";
 import type { OpenClawConfig } from "../../config/config.js";
 import type { AuthProfileStore } from "./types.js";
-import { refreshQwenPortalCredentials } from "../../providers/qwen-portal-oauth.js";
-import { refreshChutesTokens } from "../chutes-oauth.js";
+import { refreshBuiltinOAuthCredentials } from "../../providers/builtin/auth/oauth-refresh.js";
+import { requiresOAuthProjectId } from "../../providers/builtin/runtime-capabilities.js";
 import { AUTH_STORE_LOCK_OPTIONS, log } from "./constants.js";
 import { formatAuthDoctorHint } from "./doctor.js";
 import { ensureAuthStoreFile, resolveAuthStorePath } from "./paths.js";
@@ -24,7 +24,7 @@ const resolveOAuthProvider = (provider: string): OAuthProvider | null =>
   isOAuthProvider(provider) ? provider : null;
 
 function buildOAuthApiKey(provider: string, credentials: OAuthCredentials): string {
-  const needsProjectId = provider === "google-gemini-cli" || provider === "google-antigravity";
+  const needsProjectId = requiresOAuthProjectId(provider);
   return needsProjectId
     ? JSON.stringify({
         token: credentials.access,
@@ -64,25 +64,14 @@ async function refreshOAuthTokenWithLock(params: {
     };
 
     const result =
-      String(cred.provider) === "chutes"
-        ? await (async () => {
-            const newCredentials = await refreshChutesTokens({
-              credential: cred,
-            });
-            return { apiKey: newCredentials.access, newCredentials };
-          })()
-        : String(cred.provider) === "qwen-portal"
-          ? await (async () => {
-              const newCredentials = await refreshQwenPortalCredentials(cred);
-              return { apiKey: newCredentials.access, newCredentials };
-            })()
-          : await (async () => {
-              const oauthProvider = resolveOAuthProvider(cred.provider);
-              if (!oauthProvider) {
-                return null;
-              }
-              return await getOAuthApiKey(oauthProvider, oauthCreds);
-            })();
+      (await refreshBuiltinOAuthCredentials(cred)) ??
+      (await (async () => {
+        const oauthProvider = resolveOAuthProvider(cred.provider);
+        if (!oauthProvider) {
+          return null;
+        }
+        return await getOAuthApiKey(oauthProvider, oauthCreds);
+      })());
     if (!result) {
       return null;
     }

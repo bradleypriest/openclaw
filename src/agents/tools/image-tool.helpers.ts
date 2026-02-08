@@ -1,5 +1,6 @@
 import type { AssistantMessage } from "@mariozechner/pi-ai";
 import type { OpenClawConfig } from "../../config/config.js";
+import { pickConfiguredProviderVisionModel } from "../../providers/builtin/image-tool.js";
 import { extractAssistantText } from "../pi-embedded-utils.js";
 
 export type ImageModelConfig = { primary?: string; fallbacks?: string[] };
@@ -71,18 +72,10 @@ export function resolveProviderVisionModelFromConfig(params: {
     | { models?: Array<{ id?: string; input?: string[] }> }
     | undefined;
   const models = providerCfg?.models ?? [];
-  const preferMinimaxVl =
-    params.provider === "minimax"
-      ? models.find(
-          (m) =>
-            (m?.id ?? "").trim() === "MiniMax-VL-01" &&
-            Array.isArray(m?.input) &&
-            m.input.includes("image"),
-        )
-      : null;
-  const picked =
-    preferMinimaxVl ??
-    models.find((m) => Boolean((m?.id ?? "").trim()) && m.input?.includes("image"));
+  const picked = pickConfiguredProviderVisionModel({
+    provider: params.provider,
+    models,
+  });
   const id = (picked?.id ?? "").trim();
   return id ? `${params.provider}/${id}` : null;
 }

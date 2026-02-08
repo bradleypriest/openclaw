@@ -4,6 +4,7 @@ import type { TSchema } from "@sinclair/typebox";
 import { EventEmitter } from "node:events";
 import type { TranscriptPolicy } from "../transcript-policy.js";
 import { registerUnhandledRejectionHandler } from "../../infra/unhandled-rejections.js";
+import { isGoogleProvider } from "../../providers/builtin/runtime-capabilities.js";
 import {
   downgradeOpenAIReasoningBlocks,
   isCompactionFailureError,
@@ -160,7 +161,7 @@ export function sanitizeToolsForGoogle<
   tools: AgentTool<TSchemaType, TResult>[];
   provider: string;
 }): AgentTool<TSchemaType, TResult>[] {
-  if (params.provider !== "google-antigravity" && params.provider !== "google-gemini-cli") {
+  if (!isGoogleProvider(params.provider)) {
     return params.tools;
   }
   return params.tools.map((tool) => {
@@ -177,7 +178,7 @@ export function sanitizeToolsForGoogle<
 }
 
 export function logToolSchemasForGoogle(params: { tools: AgentTool[]; provider: string }) {
-  if (params.provider !== "google-antigravity" && params.provider !== "google-gemini-cli") {
+  if (!isGoogleProvider(params.provider)) {
     return;
   }
   const toolNames = params.tools.map((tool, index) => `${index}:${tool.name}`);

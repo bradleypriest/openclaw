@@ -15,6 +15,10 @@ import {
 } from "../agents/auth-profiles.js";
 import { updateAuthProfileStoreWithLock } from "../agents/auth-profiles/store.js";
 import { formatCliCommand } from "../cli/command-format.js";
+import {
+  isDeprecatedClaudeCliProfile,
+  isDeprecatedCodexCliProfile,
+} from "../providers/builtin/auth/legacy-profiles.js";
 import { note } from "../terminal/note.js";
 
 export async function maybeRepairAnthropicOAuthProfileId(
@@ -207,12 +211,12 @@ type AuthIssue = {
 };
 
 function formatAuthIssueHint(issue: AuthIssue): string | null {
-  if (issue.provider === "anthropic" && issue.profileId === CLAUDE_CLI_PROFILE_ID) {
+  if (isDeprecatedClaudeCliProfile({ provider: issue.provider, profileId: issue.profileId })) {
     return `Deprecated profile. Use ${formatCliCommand("openclaw models auth setup-token")} or ${formatCliCommand(
       "openclaw configure",
     )}.`;
   }
-  if (issue.provider === "openai-codex" && issue.profileId === CODEX_CLI_PROFILE_ID) {
+  if (isDeprecatedCodexCliProfile({ provider: issue.provider, profileId: issue.profileId })) {
     return `Deprecated profile. Use ${formatCliCommand(
       "openclaw models auth login --provider openai-codex",
     )} or ${formatCliCommand("openclaw configure")}.`;
