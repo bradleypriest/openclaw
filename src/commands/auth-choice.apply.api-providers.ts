@@ -1,4 +1,8 @@
 import type { OpenClawConfig } from "../config/config.js";
+import type {
+  BuiltinInteractiveApiKeySpec,
+  BuiltinProviderContext,
+} from "../providers/builtin/api-key/types.js";
 import type { ApplyAuthChoiceParams, ApplyAuthChoiceResult } from "./auth-choice.apply.js";
 import { upsertAuthProfile } from "../agents/auth-profiles.js";
 import { resolveEnvApiKey } from "../agents/model-auth.js";
@@ -8,54 +12,18 @@ import {
   findDeclarativeProviderAuthByChoice,
   findDeclarativeProviderAuthByTokenProvider,
 } from "../plugins/provider-auth-manifest.js";
-import { ensureBuiltinProviderSetupHooksRegistered } from "../providers/builtin/setup-hooks.js";
-import { ZAI_PROVIDER_CONFIG_HOOK_ID } from "../providers/builtin/zai/setup.js";
-import { applyProviderSetupHook } from "../providers/setup-hooks.js";
+import {
+  BUILTIN_INTERACTIVE_API_KEY_BY_AUTH_CHOICE,
+  BUILTIN_TOKEN_PROVIDER_TO_AUTH_CHOICE,
+} from "../providers/builtin/api-key/interactive-specs.js";
 import {
   formatApiKeyPreview,
   normalizeApiKeyInput,
   validateApiKeyInput,
 } from "./auth-choice.api-key.js";
 import { applyDefaultModelChoice } from "./auth-choice.default-model.js";
-import {
-  applyGoogleGeminiModelDefault,
-  GOOGLE_GEMINI_DEFAULT_MODEL,
-} from "./google-gemini-model-default.js";
-import {
-  applyAuthProfileConfig,
-  applyCloudflareAiGatewayConfig,
-  applyCloudflareAiGatewayProviderConfig,
-  applyKimiCodeConfig,
-  applyKimiCodeProviderConfig,
-  applyMoonshotConfig,
-  applyMoonshotConfigCn,
-  applyMoonshotProviderConfig,
-  applyMoonshotProviderConfigCn,
-  applyOpencodeZenConfig,
-  applyOpencodeZenProviderConfig,
-  applyOpenrouterConfig,
-  applyOpenrouterProviderConfig,
-  applySyntheticConfig,
-  applySyntheticProviderConfig,
-  applyVeniceConfig,
-  applyVeniceProviderConfig,
-  applyVercelAiGatewayConfig,
-  applyVercelAiGatewayProviderConfig,
-  applyXiaomiConfig,
-  applyXiaomiProviderConfig,
-  applyZaiConfig,
-  CLOUDFLARE_AI_GATEWAY_DEFAULT_MODEL_REF,
-  KIMI_CODING_MODEL_REF,
-  MOONSHOT_DEFAULT_MODEL_REF,
-  OPENROUTER_DEFAULT_MODEL_REF,
-  SYNTHETIC_DEFAULT_MODEL_REF,
-  VENICE_DEFAULT_MODEL_REF,
-  VERCEL_AI_GATEWAY_DEFAULT_MODEL_REF,
-  XIAOMI_DEFAULT_MODEL_REF,
-  writeApiKeyCredential,
-  ZAI_DEFAULT_MODEL_REF,
-} from "./onboard-auth.js";
-import { OPENCODE_ZEN_DEFAULT_MODEL } from "./opencode-zen-model-default.js";
+import { applyGoogleGeminiModelDefault } from "./google-gemini-model-default.js";
+import { applyAuthProfileConfig, writeApiKeyCredential } from "./onboard-auth.js";
 
 function applyProviderModelConfig(cfg: OpenClawConfig, modelRef: string): OpenClawConfig {
   const models = { ...cfg.agents?.defaults?.models };
@@ -97,307 +65,7 @@ function applyDefaultModelConfig(cfg: OpenClawConfig, modelRef: string): OpenCla
   };
 }
 
-function applyBuiltinSetupHookById(
-  hookId: string,
-  config: OpenClawConfig,
-  context?: BuiltinProviderContext,
-): OpenClawConfig {
-  ensureBuiltinProviderSetupHooksRegistered();
-  return applyProviderSetupHook(hookId, config, context);
-}
-
-type BuiltinProviderContext = {
-  accountId?: string;
-  gatewayId?: string;
-};
-
-type BuiltinProviderDefaultModel =
-  | {
-      kind: "standard";
-      defaultModel: string;
-      noteDefault?: string;
-      applyDefaultConfig: (
-        config: OpenClawConfig,
-        context?: BuiltinProviderContext,
-      ) => OpenClawConfig;
-      applyProviderConfig: (
-        config: OpenClawConfig,
-        context?: BuiltinProviderContext,
-      ) => OpenClawConfig;
-    }
-  | {
-      kind: "gemini";
-      defaultModel: string;
-    };
-
-type BuiltinDeclarativeApiProviderSpec = {
-  authChoice: string;
-  tokenProviders: string[];
-  providerId: string;
-  profileId: string;
-  label: string;
-  keyPrompt: string;
-  envProvider?: string;
-  resolveOptionApiKey?: (opts: ApplyAuthChoiceParams["opts"]) => string | undefined;
-  resolveContext?: (params: ApplyAuthChoiceParams) => Promise<BuiltinProviderContext>;
-  noteBeforePrompt?: { title: string; message: string };
-  validate?: (value: string) => string | undefined;
-  normalizeInput?: boolean;
-  defaultModel?: BuiltinProviderDefaultModel;
-};
-
-const BUILTIN_DECLARATIVE_API_PROVIDER_SPECS: BuiltinDeclarativeApiProviderSpec[] = [
-  {
-    authChoice: "openrouter-api-key",
-    tokenProviders: ["openrouter"],
-    providerId: "openrouter",
-    profileId: "openrouter:default",
-    label: "OpenRouter",
-    keyPrompt: "Enter OpenRouter API key",
-    defaultModel: {
-      kind: "standard",
-      defaultModel: OPENROUTER_DEFAULT_MODEL_REF,
-      noteDefault: OPENROUTER_DEFAULT_MODEL_REF,
-      applyDefaultConfig: applyOpenrouterConfig,
-      applyProviderConfig: applyOpenrouterProviderConfig,
-    },
-  },
-  {
-    authChoice: "ai-gateway-api-key",
-    tokenProviders: ["vercel-ai-gateway"],
-    providerId: "vercel-ai-gateway",
-    profileId: "vercel-ai-gateway:default",
-    label: "Vercel AI Gateway",
-    keyPrompt: "Enter Vercel AI Gateway API key",
-    defaultModel: {
-      kind: "standard",
-      defaultModel: VERCEL_AI_GATEWAY_DEFAULT_MODEL_REF,
-      noteDefault: VERCEL_AI_GATEWAY_DEFAULT_MODEL_REF,
-      applyDefaultConfig: applyVercelAiGatewayConfig,
-      applyProviderConfig: applyVercelAiGatewayProviderConfig,
-    },
-  },
-  {
-    authChoice: "cloudflare-ai-gateway-api-key",
-    tokenProviders: ["cloudflare-ai-gateway"],
-    providerId: "cloudflare-ai-gateway",
-    profileId: "cloudflare-ai-gateway:default",
-    label: "Cloudflare AI Gateway",
-    keyPrompt: "Enter Cloudflare AI Gateway API key",
-    resolveOptionApiKey: (opts) => opts?.cloudflareAiGatewayApiKey,
-    resolveContext: async (params) => {
-      let accountId = params.opts?.cloudflareAiGatewayAccountId?.trim() ?? "";
-      let gatewayId = params.opts?.cloudflareAiGatewayGatewayId?.trim() ?? "";
-
-      if (!accountId) {
-        const value = await params.prompter.text({
-          message: "Enter Cloudflare Account ID",
-          validate: (val) => (String(val).trim() ? undefined : "Account ID is required"),
-        });
-        accountId = String(value).trim();
-      }
-      if (!gatewayId) {
-        const value = await params.prompter.text({
-          message: "Enter Cloudflare AI Gateway ID",
-          validate: (val) => (String(val).trim() ? undefined : "Gateway ID is required"),
-        });
-        gatewayId = String(value).trim();
-      }
-
-      return { accountId, gatewayId };
-    },
-    defaultModel: {
-      kind: "standard",
-      defaultModel: CLOUDFLARE_AI_GATEWAY_DEFAULT_MODEL_REF,
-      noteDefault: CLOUDFLARE_AI_GATEWAY_DEFAULT_MODEL_REF,
-      applyDefaultConfig: (config, context) =>
-        applyCloudflareAiGatewayConfig(config, {
-          accountId: context?.accountId,
-          gatewayId: context?.gatewayId,
-        }),
-      applyProviderConfig: (config, context) =>
-        applyCloudflareAiGatewayProviderConfig(config, {
-          accountId: context?.accountId,
-          gatewayId: context?.gatewayId,
-        }),
-    },
-  },
-  {
-    authChoice: "moonshot-api-key",
-    tokenProviders: ["moonshot"],
-    providerId: "moonshot",
-    profileId: "moonshot:default",
-    label: "Moonshot",
-    keyPrompt: "Enter Moonshot API key",
-    defaultModel: {
-      kind: "standard",
-      defaultModel: MOONSHOT_DEFAULT_MODEL_REF,
-      applyDefaultConfig: applyMoonshotConfig,
-      applyProviderConfig: applyMoonshotProviderConfig,
-    },
-  },
-  {
-    authChoice: "moonshot-api-key-cn",
-    tokenProviders: ["moonshot"],
-    providerId: "moonshot",
-    profileId: "moonshot:default",
-    label: "Moonshot (.cn)",
-    keyPrompt: "Enter Moonshot API key (.cn)",
-    defaultModel: {
-      kind: "standard",
-      defaultModel: MOONSHOT_DEFAULT_MODEL_REF,
-      applyDefaultConfig: applyMoonshotConfigCn,
-      applyProviderConfig: applyMoonshotProviderConfigCn,
-    },
-  },
-  {
-    authChoice: "kimi-code-api-key",
-    tokenProviders: ["kimi-code", "kimi-coding"],
-    providerId: "kimi-coding",
-    profileId: "kimi-coding:default",
-    label: "Kimi Coding",
-    keyPrompt: "Enter Kimi Coding API key",
-    noteBeforePrompt: {
-      title: "Kimi Coding",
-      message: [
-        "Kimi Coding uses a dedicated endpoint and API key.",
-        "Get your API key at: https://www.kimi.com/code/en",
-      ].join("\n"),
-    },
-    defaultModel: {
-      kind: "standard",
-      defaultModel: KIMI_CODING_MODEL_REF,
-      noteDefault: KIMI_CODING_MODEL_REF,
-      applyDefaultConfig: applyKimiCodeConfig,
-      applyProviderConfig: applyKimiCodeProviderConfig,
-    },
-  },
-  {
-    authChoice: "gemini-api-key",
-    tokenProviders: ["google"],
-    providerId: "google",
-    profileId: "google:default",
-    label: "Google Gemini",
-    keyPrompt: "Enter Gemini API key",
-    defaultModel: {
-      kind: "gemini",
-      defaultModel: GOOGLE_GEMINI_DEFAULT_MODEL,
-    },
-  },
-  {
-    authChoice: "zai-api-key",
-    tokenProviders: ["zai"],
-    providerId: "zai",
-    profileId: "zai:default",
-    label: "Z.AI",
-    keyPrompt: "Enter Z.AI API key",
-    defaultModel: {
-      kind: "standard",
-      defaultModel: ZAI_DEFAULT_MODEL_REF,
-      noteDefault: ZAI_DEFAULT_MODEL_REF,
-      applyDefaultConfig: applyZaiConfig,
-      applyProviderConfig: (config, context) =>
-        applyBuiltinSetupHookById(ZAI_PROVIDER_CONFIG_HOOK_ID, config, context),
-    },
-  },
-  {
-    authChoice: "xiaomi-api-key",
-    tokenProviders: ["xiaomi"],
-    providerId: "xiaomi",
-    profileId: "xiaomi:default",
-    label: "Xiaomi",
-    keyPrompt: "Enter Xiaomi API key",
-    defaultModel: {
-      kind: "standard",
-      defaultModel: XIAOMI_DEFAULT_MODEL_REF,
-      noteDefault: XIAOMI_DEFAULT_MODEL_REF,
-      applyDefaultConfig: applyXiaomiConfig,
-      applyProviderConfig: applyXiaomiProviderConfig,
-    },
-  },
-  {
-    authChoice: "synthetic-api-key",
-    tokenProviders: ["synthetic"],
-    providerId: "synthetic",
-    profileId: "synthetic:default",
-    label: "Synthetic",
-    keyPrompt: "Enter Synthetic API key",
-    validate: (value) => (value.trim() ? undefined : "Required"),
-    defaultModel: {
-      kind: "standard",
-      defaultModel: SYNTHETIC_DEFAULT_MODEL_REF,
-      noteDefault: SYNTHETIC_DEFAULT_MODEL_REF,
-      applyDefaultConfig: applySyntheticConfig,
-      applyProviderConfig: applySyntheticProviderConfig,
-    },
-  },
-  {
-    authChoice: "venice-api-key",
-    tokenProviders: ["venice"],
-    providerId: "venice",
-    profileId: "venice:default",
-    label: "Venice AI",
-    keyPrompt: "Enter Venice AI API key",
-    noteBeforePrompt: {
-      title: "Venice AI",
-      message: [
-        "Venice AI provides privacy-focused inference with uncensored models.",
-        "Get your API key at: https://venice.ai/settings/api",
-        "Supports 'private' (fully private) and 'anonymized' (proxy) modes.",
-      ].join("\n"),
-    },
-    defaultModel: {
-      kind: "standard",
-      defaultModel: VENICE_DEFAULT_MODEL_REF,
-      noteDefault: VENICE_DEFAULT_MODEL_REF,
-      applyDefaultConfig: applyVeniceConfig,
-      applyProviderConfig: applyVeniceProviderConfig,
-    },
-  },
-  {
-    authChoice: "opencode-zen",
-    tokenProviders: ["opencode"],
-    providerId: "opencode",
-    profileId: "opencode:default",
-    label: "OpenCode Zen",
-    keyPrompt: "Enter OpenCode Zen API key",
-    envProvider: "opencode",
-    noteBeforePrompt: {
-      title: "OpenCode Zen",
-      message: [
-        "OpenCode Zen provides access to Claude, GPT, Gemini, and more models.",
-        "Get your API key at: https://opencode.ai/auth",
-        "OpenCode Zen bills per request. Check your OpenCode dashboard for details.",
-      ].join("\n"),
-    },
-    defaultModel: {
-      kind: "standard",
-      defaultModel: OPENCODE_ZEN_DEFAULT_MODEL,
-      noteDefault: OPENCODE_ZEN_DEFAULT_MODEL,
-      applyDefaultConfig: applyOpencodeZenConfig,
-      applyProviderConfig: applyOpencodeZenProviderConfig,
-    },
-  },
-];
-
-const BUILTIN_PROVIDER_BY_AUTH_CHOICE = new Map(
-  BUILTIN_DECLARATIVE_API_PROVIDER_SPECS.map((spec) => [spec.authChoice, spec]),
-);
-
-const BUILTIN_TOKEN_PROVIDER_TO_AUTH_CHOICE = (() => {
-  const map = new Map<string, string>();
-  for (const spec of BUILTIN_DECLARATIVE_API_PROVIDER_SPECS) {
-    for (const tokenProvider of spec.tokenProviders) {
-      const normalized = normalizeProviderId(tokenProvider);
-      if (!map.has(normalized)) {
-        map.set(normalized, spec.authChoice);
-      }
-    }
-  }
-  return map;
-})();
-
-function normalizeBuiltinApiKeyInput(spec: BuiltinDeclarativeApiProviderSpec, raw: string): string {
+function normalizeBuiltinApiKeyInput(spec: BuiltinInteractiveApiKeySpec, raw: string): string {
   if (spec.normalizeInput === false) {
     return raw.trim();
   }
@@ -405,7 +73,7 @@ function normalizeBuiltinApiKeyInput(spec: BuiltinDeclarativeApiProviderSpec, ra
 }
 
 function tokenProviderMatches(
-  spec: BuiltinDeclarativeApiProviderSpec,
+  spec: BuiltinInteractiveApiKeySpec,
   tokenProviderRaw?: string,
 ): boolean {
   const tokenProvider = tokenProviderRaw?.trim();
@@ -509,7 +177,7 @@ async function applyBuiltinDeclarativeApiProvider(params: {
   noteAgentModel: (model: string) => Promise<void>;
   authChoice: string;
 }): Promise<{ config: OpenClawConfig; agentModelOverride?: string } | null> {
-  const spec = BUILTIN_PROVIDER_BY_AUTH_CHOICE.get(params.authChoice);
+  const spec = BUILTIN_INTERACTIVE_API_KEY_BY_AUTH_CHOICE.get(params.authChoice);
   if (!spec) {
     return null;
   }
@@ -530,32 +198,18 @@ async function applyBuiltinDeclarativeApiProvider(params: {
 
   const persistCredential = async (rawKey: string): Promise<void> => {
     const context = await ensureContext();
-    if (spec.providerId === "cloudflare-ai-gateway") {
-      const accountId = context?.accountId?.trim();
-      const gatewayId = context?.gatewayId?.trim();
-      if (!accountId || !gatewayId) {
-        throw new Error("Cloudflare Account ID and Gateway ID are required");
-      }
-      await writeApiKeyCredential({
-        providerId: spec.providerId,
-        profileId: spec.profileId,
-        key: normalizeBuiltinApiKeyInput(spec, rawKey),
-        metadata: { accountId, gatewayId },
-        agentDir: params.params.agentDir,
-      });
-      return;
-    }
-
     await writeApiKeyCredential({
       providerId: spec.providerId,
       profileId: spec.profileId,
       key: normalizeBuiltinApiKeyInput(spec, rawKey),
+      metadata: spec.resolveCredentialMetadata?.(context),
       agentDir: params.params.agentDir,
     });
   };
 
   let hasCredential = false;
   const opts = params.params.opts;
+  const optionValues = opts as Record<string, unknown> | undefined;
   const tokenFromOpts =
     opts?.token && tokenProviderMatches(spec, opts.tokenProvider) ? opts.token : undefined;
   if (tokenFromOpts) {
@@ -563,7 +217,9 @@ async function applyBuiltinDeclarativeApiProvider(params: {
     hasCredential = true;
   }
 
-  const explicitOptionApiKey = spec.resolveOptionApiKey?.(opts);
+  const explicitOptionApiKey = spec.optionKey
+    ? (optionValues?.[spec.optionKey] as string | undefined)
+    : undefined;
   if (!hasCredential && explicitOptionApiKey?.trim()) {
     await persistCredential(explicitOptionApiKey);
     hasCredential = true;
