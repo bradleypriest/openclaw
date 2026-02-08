@@ -1,7 +1,9 @@
 import { normalizeProviderId } from "../provider-id.js";
 import {
   isAntigravityClaudeModel as isBuiltinAntigravityClaudeModel,
+  isAnthropicProvider,
   isGoogleModelApi,
+  isOpenAiFamilyProvider,
 } from "./runtime-capabilities.js";
 
 type ToolCallIdMode = "strict" | "strict9";
@@ -39,7 +41,6 @@ const OPENAI_MODEL_APIS = new Set([
   "openai-responses",
   "openai-codex-responses",
 ]);
-const OPENAI_PROVIDERS = new Set(["openai", "openai-codex"]);
 
 function isOpenAiApi(modelApi?: string | null): boolean {
   if (!modelApi) {
@@ -49,19 +50,14 @@ function isOpenAiApi(modelApi?: string | null): boolean {
 }
 
 function isOpenAiProvider(provider?: string | null): boolean {
-  if (!provider) {
-    return false;
-  }
-  return OPENAI_PROVIDERS.has(normalizeProviderId(provider));
+  return isOpenAiFamilyProvider(provider ?? undefined);
 }
 
 function isAnthropicApi(modelApi?: string | null, provider?: string | null): boolean {
   if (modelApi === "anthropic-messages") {
     return true;
   }
-  const normalized = normalizeProviderId(provider ?? "");
-  // MiniMax now uses openai-completions API, not anthropic-messages
-  return normalized === "anthropic";
+  return isAnthropicProvider(provider ?? undefined);
 }
 
 function isMistralModel(params: { provider?: string | null; modelId?: string | null }): boolean {

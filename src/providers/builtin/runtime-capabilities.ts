@@ -1,8 +1,5 @@
-import { normalizeProviderId } from "../provider-id.js";
-import { BUILTIN_IMPLICIT_COPILOT_PROVIDER_ID } from "./implicit-providers.js";
+import { hasBuiltinProviderTag } from "./runtime/provider-tags.js";
 
-const OPENAI_FAMILY_PROVIDER_IDS = new Set(["openai", "openai-codex"]);
-const GOOGLE_PROVIDER_IDS = new Set(["google-antigravity", "google-gemini-cli"]);
 const GOOGLE_MODEL_APIS = new Set([
   "google-antigravity",
   "google-gemini-cli",
@@ -10,38 +7,23 @@ const GOOGLE_MODEL_APIS = new Set([
 ]);
 
 export function isAnthropicProvider(provider?: string): boolean {
-  if (!provider?.trim()) {
-    return false;
-  }
-  return normalizeProviderId(provider) === "anthropic";
+  return hasBuiltinProviderTag(provider, "anthropic");
 }
 
 export function isOpenRouterProvider(provider?: string): boolean {
-  if (!provider?.trim()) {
-    return false;
-  }
-  return normalizeProviderId(provider) === "openrouter";
+  return hasBuiltinProviderTag(provider, "openrouter");
 }
 
 export function isCopilotProvider(provider?: string): boolean {
-  if (!provider?.trim()) {
-    return false;
-  }
-  return normalizeProviderId(provider) === BUILTIN_IMPLICIT_COPILOT_PROVIDER_ID;
+  return hasBuiltinProviderTag(provider, "copilot");
 }
 
 export function isOpenAiFamilyProvider(provider?: string): boolean {
-  if (!provider?.trim()) {
-    return false;
-  }
-  return OPENAI_FAMILY_PROVIDER_IDS.has(normalizeProviderId(provider));
+  return hasBuiltinProviderTag(provider, "openai-family");
 }
 
 export function isGoogleProvider(provider?: string): boolean {
-  if (!provider?.trim()) {
-    return false;
-  }
-  return GOOGLE_PROVIDER_IDS.has(normalizeProviderId(provider));
+  return hasBuiltinProviderTag(provider, "google-provider");
 }
 
 export function isGoogleModelApi(api?: string | null): boolean {
@@ -52,10 +34,7 @@ export function isGoogleModelApi(api?: string | null): boolean {
 }
 
 export function isGoogleAntigravityProvider(provider?: string): boolean {
-  if (!provider?.trim()) {
-    return false;
-  }
-  return normalizeProviderId(provider) === "google-antigravity";
+  return hasBuiltinProviderTag(provider, "google-antigravity");
 }
 
 export function isAntigravityClaudeModel(params: {
@@ -72,11 +51,11 @@ export function isAntigravityClaudeModel(params: {
 }
 
 export function requiresOAuthProjectId(provider?: string): boolean {
-  return isGoogleProvider(provider);
+  return hasBuiltinProviderTag(provider, "requires-oauth-project-id");
 }
 
 export function supportsCacheRetentionStreamParam(provider?: string): boolean {
-  return isAnthropicProvider(provider);
+  return hasBuiltinProviderTag(provider, "supports-cache-retention");
 }
 
 export function isCacheTtlEligibleProvider(params: { provider: string; modelId: string }): boolean {

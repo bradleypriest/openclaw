@@ -1,7 +1,7 @@
 import type { OAuthCredential } from "../../../agents/auth-profiles/types.js";
 import { normalizeProviderId } from "../../provider-id.js";
-import { refreshQwenPortalCredentials } from "../../qwen-portal-oauth.js";
 import { refreshChutesTokens } from "../chutes/oauth.js";
+import { refreshQwenPortalCredentials } from "../qwen-portal/oauth.js";
 
 type BuiltinOAuthRefreshResult = {
   apiKey: string;

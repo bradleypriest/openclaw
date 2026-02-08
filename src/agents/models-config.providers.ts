@@ -1,4 +1,6 @@
 import type { OpenClawConfig } from "../config/config.js";
+import { resolveEnvApiKey } from "../providers/auth-env-api-key.js";
+import { resolvePreferredAwsSdkEnvVarName } from "../providers/builtin/auth/aws-sdk-auth.js";
 import { resolveBuiltinDefaultAuthMode } from "../providers/builtin/auth/default-auth-mode.js";
 import {
   BUILTIN_IMPLICIT_BEDROCK_PROVIDER_ID,
@@ -8,15 +10,51 @@ import {
   resolveBuiltinImplicitProviders,
 } from "../providers/builtin/implicit-providers.js";
 import { ensureBuiltinProviderModelNormalizersRegistered } from "../providers/builtin/model-normalizer-registry.js";
-import { buildXiaomiProviderConfig as buildBuiltinXiaomiProvider } from "../providers/builtin/xiaomi/models.js";
 import { normalizeModelIdForProvider } from "../providers/model-normalizers.js";
 import { normalizeProviderId } from "../providers/provider-id.js";
 import { ensureAuthProfileStore, listProfilesForProvider } from "./auth-profiles.js";
-import { resolveAwsSdkEnvVarName, resolveEnvApiKey } from "./model-auth.js";
 
 type ModelsConfig = NonNullable<OpenClawConfig["models"]>;
 export type ProviderConfig = NonNullable<ModelsConfig["providers"]>[string];
 export { BUILTIN_IMPLICIT_BEDROCK_PROVIDER_ID, BUILTIN_IMPLICIT_COPILOT_PROVIDER_ID };
+
+function mergeProviderModels(implicit: ProviderConfig, explicit: ProviderConfig): ProviderConfig {
+  const implicitModels = Array.isArray(implicit.models) ? implicit.models : [];
+  const explicitModels = Array.isArray(explicit.models) ? explicit.models : [];
+  if (implicitModels.length === 0) {
+    return { ...implicit, ...explicit };
+  }
+
+  const getId = (model: unknown): string => {
+    if (!model || typeof model !== "object") {
+      return "";
+    }
+    const id = (model as { id?: unknown }).id;
+    return typeof id === "string" ? id.trim() : "";
+  };
+  const seen = new Set(explicitModels.map(getId).filter(Boolean));
+
+  const mergedModels = [
+    ...explicitModels,
+    ...implicitModels.filter((model) => {
+      const id = getId(model);
+      if (!id) {
+        return false;
+      }
+      if (seen.has(id)) {
+        return false;
+      }
+      seen.add(id);
+      return true;
+    }),
+  ];
+
+  return {
+    ...implicit,
+    ...explicit,
+    models: mergedModels,
+  };
+}
 
 function normalizeApiKeyConfig(value: string): string {
   const trimmed = value.trim();
@@ -34,7 +72,7 @@ function resolveEnvApiKeyVarName(provider: string): string | undefined {
 }
 
 function resolveAwsSdkApiKeyVarName(): string {
-  return resolveAwsSdkEnvVarName() ?? "AWS_PROFILE";
+  return resolvePreferredAwsSdkEnvVarName() ?? "AWS_PROFILE";
 }
 
 function resolveApiKeyFromProfiles(params: {
@@ -150,10 +188,6 @@ export function normalizeProviders(params: {
   return mutated ? next : providers;
 }
 
-export function buildXiaomiProvider(): ProviderConfig {
-  return buildBuiltinXiaomiProvider();
-}
-
 export async function resolveImplicitProviders(params: {
   agentDir: string;
 }): Promise<ModelsConfig["providers"]> {
@@ -189,6 +223,37 @@ export async function resolveImplicitBedrockProvider(params: {
   return await resolveBuiltinImplicitBedrockProvider({
     config: params.config,
     env: params.env,
-    hasAwsCreds: (env) => resolveAwsSdkEnvVarName(env) !== undefined,
+    hasAwsCreds: (env) => resolvePreferredAwsSdkEnvVarName(env) !== undefined,
   });
+}
+
+export async function applyImplicitProviderOverlays(params: {
+  providers: Record<string, ProviderConfig>;
+  agentDir: string;
+  config?: OpenClawConfig;
+  env?: NodeJS.ProcessEnv;
+}): Promise<Record<string, ProviderConfig>> {
+  const next = { ...params.providers };
+
+  const implicitBedrock = await resolveImplicitBedrockProvider({
+    agentDir: params.agentDir,
+    config: params.config,
+    env: params.env,
+  });
+  if (implicitBedrock) {
+    const existing = next[BUILTIN_IMPLICIT_BEDROCK_PROVIDER_ID];
+    next[BUILTIN_IMPLICIT_BEDROCK_PROVIDER_ID] = existing
+      ? mergeProviderModels(implicitBedrock, existing)
+      : implicitBedrock;
+  }
+
+  const implicitCopilot = await resolveImplicitCopilotProvider({
+    agentDir: params.agentDir,
+    env: params.env,
+  });
+  if (implicitCopilot && !next[BUILTIN_IMPLICIT_COPILOT_PROVIDER_ID]) {
+    next[BUILTIN_IMPLICIT_COPILOT_PROVIDER_ID] = implicitCopilot;
+  }
+
+  return next;
 }

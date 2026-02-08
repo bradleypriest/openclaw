@@ -31,7 +31,7 @@ import { modelsListCommand, modelsStatusCommand } from "../commands/models/list.
 import { modelsScanCommand } from "../commands/models/scan.js";
 import { modelsSetImageCommand } from "../commands/models/set-image.js";
 import { modelsSetCommand } from "../commands/models/set.js";
-import { githubCopilotLoginCommand } from "../providers/github-copilot-auth.js";
+import { githubCopilotLoginCommand } from "../providers/builtin/github-copilot/auth.js";
 import { defaultRuntime } from "../runtime.js";
 import { formatDocsLink } from "../terminal/links.js";
 import { theme } from "../terminal/theme.js";

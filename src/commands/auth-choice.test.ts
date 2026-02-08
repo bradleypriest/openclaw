@@ -7,7 +7,7 @@ import type { WizardPrompter } from "../wizard/prompts.js";
 import type { AuthChoice } from "./onboard-types.js";
 import { applyAuthChoice, resolvePreferredProviderForAuthChoice } from "./auth-choice.js";
 
-vi.mock("../providers/github-copilot-auth.js", () => ({
+vi.mock("../providers/builtin/github-copilot/auth.js", () => ({
   githubCopilotLoginCommand: vi.fn(async () => {}),
 }));
 

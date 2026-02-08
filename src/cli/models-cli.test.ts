@@ -13,10 +13,10 @@ vi.mock("../commands/models/list.js", async () => {
   };
 });
 
-vi.mock("../providers/github-copilot-auth.js", async () => {
-  const actual = await vi.importActual<typeof import("../providers/github-copilot-auth.js")>(
-    "../providers/github-copilot-auth.js",
-  );
+vi.mock("../providers/builtin/github-copilot/auth.js", async () => {
+  const actual = await vi.importActual<
+    typeof import("../providers/builtin/github-copilot/auth.js")
+  >("../providers/builtin/github-copilot/auth.js");
   return {
     ...actual,
     githubCopilotLoginCommand,

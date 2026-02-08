@@ -24,7 +24,7 @@ import {
   listBuiltinSetupTokenProviderSpecs,
   resolveBuiltinSetupTokenProviderSpec,
   type BuiltinSetupTokenProviderSpec,
-} from "../../providers/builtin/auth/setup-token-providers.js";
+} from "../../providers/builtin/auth/setup-token-provider-specs.js";
 import { stylePromptHint, stylePromptMessage } from "../../terminal/prompt-style.js";
 import { createClackPrompter } from "../../wizard/clack-prompter.js";
 import { isRemoteEnvironment } from "../oauth-env.js";

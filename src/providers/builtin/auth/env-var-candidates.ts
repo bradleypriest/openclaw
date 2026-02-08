@@ -1,22 +1,6 @@
 import { normalizeProviderId } from "../../provider-id.js";
 import { listBuiltinNonInteractiveApiKeySpecs } from "../api-key/non-interactive-specs.js";
-
-const EXTRA_PROVIDER_ENV_VAR_CANDIDATES: Record<string, string[]> = {
-  "github-copilot": ["COPILOT_GITHUB_TOKEN", "GH_TOKEN", "GITHUB_TOKEN"],
-  anthropic: ["ANTHROPIC_OAUTH_TOKEN", "ANTHROPIC_API_KEY"],
-  openai: ["OPENAI_API_KEY"],
-  chutes: ["CHUTES_OAUTH_TOKEN", "CHUTES_API_KEY"],
-  zai: ["ZAI_API_KEY", "Z_AI_API_KEY"],
-  "qwen-portal": ["QWEN_OAUTH_TOKEN", "QWEN_PORTAL_API_KEY"],
-  "minimax-portal": ["MINIMAX_OAUTH_TOKEN", "MINIMAX_API_KEY"],
-  "kimi-coding": ["KIMI_API_KEY", "KIMICODE_API_KEY"],
-  opencode: ["OPENCODE_API_KEY", "OPENCODE_ZEN_API_KEY"],
-  groq: ["GROQ_API_KEY"],
-  deepgram: ["DEEPGRAM_API_KEY"],
-  cerebras: ["CEREBRAS_API_KEY"],
-  mistral: ["MISTRAL_API_KEY"],
-  ollama: ["OLLAMA_API_KEY"],
-};
+import { listBuiltinProviderAuthAttributes } from "./provider-auth-attributes.js";
 
 const BUILTIN_PROVIDER_ENV_VAR_CANDIDATES: Record<string, string[]> = (() => {
   const map = new Map<string, Set<string>>();
@@ -38,9 +22,13 @@ const BUILTIN_PROVIDER_ENV_VAR_CANDIDATES: Record<string, string[]> = (() => {
     add(spec.providerId, spec.envVar);
   }
 
-  for (const [provider, envVars] of Object.entries(EXTRA_PROVIDER_ENV_VAR_CANDIDATES)) {
+  for (const providerAuth of listBuiltinProviderAuthAttributes()) {
+    const envVars = providerAuth.envVarCandidates;
+    if (!envVars?.length) {
+      continue;
+    }
     for (const envVar of envVars) {
-      add(provider, envVar);
+      add(providerAuth.providerId, envVar);
     }
   }
 

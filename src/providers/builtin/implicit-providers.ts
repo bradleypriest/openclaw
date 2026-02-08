@@ -1,12 +1,22 @@
 import type { OpenClawConfig } from "../../config/config.js";
-import type { ModelDefinitionConfig } from "../../config/types.models.js";
-import { DEFAULT_COPILOT_API_BASE_URL, resolveCopilotApiToken } from "../github-copilot-token.js";
 import { discoverBedrockModels } from "./amazon-bedrock/discovery.js";
 import {
   buildCloudflareAiGatewayModelDefinition,
   resolveCloudflareAiGatewayBaseUrl,
 } from "./cloudflare-ai-gateway/models.js";
+import { DEFAULT_COPILOT_API_BASE_URL, resolveCopilotApiToken } from "./github-copilot/token.js";
+import { type BuiltinAuthStoreLike, type BuiltinImplicitProviderConfig } from "./implicit-types.js";
+import {
+  buildMinimaxImplicitProviderConfig,
+  buildMinimaxPortalImplicitProviderConfig,
+  MINIMAX_IMPLICIT_OAUTH_PLACEHOLDER,
+} from "./minimax/implicit-provider.js";
 import { buildMoonshotProviderConfig } from "./moonshot/models.js";
+import { buildOllamaImplicitProviderConfig } from "./ollama/implicit-provider.js";
+import {
+  buildQwenPortalImplicitProviderConfig,
+  QWEN_PORTAL_IMPLICIT_OAUTH_PLACEHOLDER,
+} from "./qwen-portal/implicit-provider.js";
 import {
   buildSyntheticModelDefinition,
   SYNTHETIC_BASE_URL,
@@ -15,183 +25,10 @@ import {
 import { discoverVeniceModels, VENICE_BASE_URL } from "./venice/models.js";
 import { buildXiaomiProviderConfig } from "./xiaomi/models.js";
 
-type ModelsConfig = NonNullable<OpenClawConfig["models"]>;
-export type BuiltinImplicitProviderConfig = NonNullable<ModelsConfig["providers"]>[string];
+export type { BuiltinImplicitProviderConfig } from "./implicit-types.js";
 
 export const BUILTIN_IMPLICIT_BEDROCK_PROVIDER_ID = "amazon-bedrock";
 export const BUILTIN_IMPLICIT_COPILOT_PROVIDER_ID = "github-copilot";
-
-type BuiltinAuthProfileLike = {
-  type?: string;
-  key?: string;
-  token?: string;
-  metadata?: {
-    accountId?: string;
-    gatewayId?: string;
-  };
-};
-
-type BuiltinAuthStoreLike = {
-  profiles: Record<string, BuiltinAuthProfileLike | undefined>;
-};
-
-const MINIMAX_API_BASE_URL = "https://api.minimax.chat/v1";
-const MINIMAX_PORTAL_BASE_URL = "https://api.minimax.io/anthropic";
-const MINIMAX_DEFAULT_MODEL_ID = "MiniMax-M2.1";
-const MINIMAX_DEFAULT_VISION_MODEL_ID = "MiniMax-VL-01";
-const MINIMAX_DEFAULT_CONTEXT_WINDOW = 200000;
-const MINIMAX_DEFAULT_MAX_TOKENS = 8192;
-const MINIMAX_OAUTH_PLACEHOLDER = "minimax-oauth";
-// Pricing: MiniMax doesn't publish public rates. Override in models.json for accurate costs.
-const MINIMAX_API_COST = {
-  input: 15,
-  output: 60,
-  cacheRead: 2,
-  cacheWrite: 10,
-};
-
-const QWEN_PORTAL_BASE_URL = "https://portal.qwen.ai/v1";
-const QWEN_PORTAL_OAUTH_PLACEHOLDER = "qwen-oauth";
-const QWEN_PORTAL_DEFAULT_CONTEXT_WINDOW = 128000;
-const QWEN_PORTAL_DEFAULT_MAX_TOKENS = 8192;
-const QWEN_PORTAL_DEFAULT_COST = {
-  input: 0,
-  output: 0,
-  cacheRead: 0,
-  cacheWrite: 0,
-};
-
-const OLLAMA_BASE_URL = "http://127.0.0.1:11434/v1";
-const OLLAMA_API_BASE_URL = "http://127.0.0.1:11434";
-const OLLAMA_DEFAULT_CONTEXT_WINDOW = 128000;
-const OLLAMA_DEFAULT_MAX_TOKENS = 8192;
-const OLLAMA_DEFAULT_COST = {
-  input: 0,
-  output: 0,
-  cacheRead: 0,
-  cacheWrite: 0,
-};
-
-interface OllamaModel {
-  name: string;
-}
-
-interface OllamaTagsResponse {
-  models: OllamaModel[];
-}
-
-async function discoverOllamaModels(): Promise<ModelDefinitionConfig[]> {
-  // Skip Ollama discovery in test environments.
-  if (process.env.VITEST || process.env.NODE_ENV === "test") {
-    return [];
-  }
-  try {
-    const response = await fetch(`${OLLAMA_API_BASE_URL}/api/tags`, {
-      signal: AbortSignal.timeout(5000),
-    });
-    if (!response.ok) {
-      console.warn(`Failed to discover Ollama models: ${response.status}`);
-      return [];
-    }
-    const data = (await response.json()) as OllamaTagsResponse;
-    if (!data.models || data.models.length === 0) {
-      console.warn("No Ollama models found on local instance");
-      return [];
-    }
-    return data.models.map((model) => {
-      const modelId = model.name;
-      const isReasoning =
-        modelId.toLowerCase().includes("r1") || modelId.toLowerCase().includes("reasoning");
-      return {
-        id: modelId,
-        name: modelId,
-        reasoning: isReasoning,
-        input: ["text"],
-        cost: OLLAMA_DEFAULT_COST,
-        contextWindow: OLLAMA_DEFAULT_CONTEXT_WINDOW,
-        maxTokens: OLLAMA_DEFAULT_MAX_TOKENS,
-        params: {
-          streaming: false,
-        },
-      };
-    });
-  } catch (error) {
-    console.warn(`Failed to discover Ollama models: ${String(error)}`);
-    return [];
-  }
-}
-
-function buildMinimaxProvider(): BuiltinImplicitProviderConfig {
-  return {
-    baseUrl: MINIMAX_API_BASE_URL,
-    api: "openai-completions",
-    models: [
-      {
-        id: MINIMAX_DEFAULT_MODEL_ID,
-        name: "MiniMax M2.1",
-        reasoning: false,
-        input: ["text"],
-        cost: MINIMAX_API_COST,
-        contextWindow: MINIMAX_DEFAULT_CONTEXT_WINDOW,
-        maxTokens: MINIMAX_DEFAULT_MAX_TOKENS,
-      },
-      {
-        id: MINIMAX_DEFAULT_VISION_MODEL_ID,
-        name: "MiniMax VL 01",
-        reasoning: false,
-        input: ["text", "image"],
-        cost: MINIMAX_API_COST,
-        contextWindow: MINIMAX_DEFAULT_CONTEXT_WINDOW,
-        maxTokens: MINIMAX_DEFAULT_MAX_TOKENS,
-      },
-    ],
-  };
-}
-
-function buildMinimaxPortalProvider(): BuiltinImplicitProviderConfig {
-  return {
-    baseUrl: MINIMAX_PORTAL_BASE_URL,
-    api: "anthropic-messages",
-    models: [
-      {
-        id: MINIMAX_DEFAULT_MODEL_ID,
-        name: "MiniMax M2.1",
-        reasoning: false,
-        input: ["text"],
-        cost: MINIMAX_API_COST,
-        contextWindow: MINIMAX_DEFAULT_CONTEXT_WINDOW,
-        maxTokens: MINIMAX_DEFAULT_MAX_TOKENS,
-      },
-    ],
-  };
-}
-
-function buildQwenPortalProvider(): BuiltinImplicitProviderConfig {
-  return {
-    baseUrl: QWEN_PORTAL_BASE_URL,
-    api: "openai-completions",
-    models: [
-      {
-        id: "coder-model",
-        name: "Qwen Coder",
-        reasoning: false,
-        input: ["text"],
-        cost: QWEN_PORTAL_DEFAULT_COST,
-        contextWindow: QWEN_PORTAL_DEFAULT_CONTEXT_WINDOW,
-        maxTokens: QWEN_PORTAL_DEFAULT_MAX_TOKENS,
-      },
-      {
-        id: "vision-model",
-        name: "Qwen Vision",
-        reasoning: false,
-        input: ["text", "image"],
-        cost: QWEN_PORTAL_DEFAULT_COST,
-        contextWindow: QWEN_PORTAL_DEFAULT_CONTEXT_WINDOW,
-        maxTokens: QWEN_PORTAL_DEFAULT_MAX_TOKENS,
-      },
-    ],
-  };
-}
 
 function buildSyntheticProvider(): BuiltinImplicitProviderConfig {
   return {
@@ -210,15 +47,6 @@ async function buildVeniceProvider(): Promise<BuiltinImplicitProviderConfig> {
   };
 }
 
-async function buildOllamaProvider(): Promise<BuiltinImplicitProviderConfig> {
-  const models = await discoverOllamaModels();
-  return {
-    baseUrl: OLLAMA_BASE_URL,
-    api: "openai-completions",
-    models,
-  };
-}
-
 export async function resolveBuiltinImplicitProviders(params: {
   authStore: BuiltinAuthStoreLike;
   listProfileIdsForProvider: (provider: string) => string[];
@@ -230,13 +58,13 @@ export async function resolveBuiltinImplicitProviders(params: {
   const minimaxKey =
     params.resolveEnvApiKeyVarName("minimax") ?? params.resolveApiKeyFromProfiles("minimax");
   if (minimaxKey) {
-    providers.minimax = { ...buildMinimaxProvider(), apiKey: minimaxKey };
+    providers.minimax = { ...buildMinimaxImplicitProviderConfig(), apiKey: minimaxKey };
   }
 
   if (params.listProfileIdsForProvider("minimax-portal").length > 0) {
     providers["minimax-portal"] = {
-      ...buildMinimaxPortalProvider(),
-      apiKey: MINIMAX_OAUTH_PLACEHOLDER,
+      ...buildMinimaxPortalImplicitProviderConfig(),
+      apiKey: MINIMAX_IMPLICIT_OAUTH_PLACEHOLDER,
     };
   }
 
@@ -260,8 +88,8 @@ export async function resolveBuiltinImplicitProviders(params: {
 
   if (params.listProfileIdsForProvider("qwen-portal").length > 0) {
     providers["qwen-portal"] = {
-      ...buildQwenPortalProvider(),
-      apiKey: QWEN_PORTAL_OAUTH_PLACEHOLDER,
+      ...buildQwenPortalImplicitProviderConfig(),
+      apiKey: QWEN_PORTAL_IMPLICIT_OAUTH_PLACEHOLDER,
     };
   }
 
@@ -303,7 +131,7 @@ export async function resolveBuiltinImplicitProviders(params: {
   const ollamaKey =
     params.resolveEnvApiKeyVarName("ollama") ?? params.resolveApiKeyFromProfiles("ollama");
   if (ollamaKey) {
-    providers.ollama = { ...(await buildOllamaProvider()), apiKey: ollamaKey };
+    providers.ollama = { ...(await buildOllamaImplicitProviderConfig()), apiKey: ollamaKey };
   }
 
   return providers;

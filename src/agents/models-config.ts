@@ -3,12 +3,9 @@ import path from "node:path";
 import { type OpenClawConfig, loadConfig } from "../config/config.js";
 import { resolveOpenClawAgentDir } from "./agent-paths.js";
 import {
-  BUILTIN_IMPLICIT_BEDROCK_PROVIDER_ID,
-  BUILTIN_IMPLICIT_COPILOT_PROVIDER_ID,
+  applyImplicitProviderOverlays,
   normalizeProviders,
   type ProviderConfig,
-  resolveImplicitBedrockProvider,
-  resolveImplicitCopilotProvider,
   resolveImplicitProviders,
 } from "./models-config.providers.js";
 
@@ -92,21 +89,15 @@ export async function ensureOpenClawModelsJson(
 
   const explicitProviders = cfg.models?.providers ?? {};
   const implicitProviders = await resolveImplicitProviders({ agentDir });
-  const providers: Record<string, ProviderConfig> = mergeProviders({
+  const baseProviders: Record<string, ProviderConfig> = mergeProviders({
     implicit: implicitProviders,
     explicit: explicitProviders,
   });
-  const implicitBedrock = await resolveImplicitBedrockProvider({ agentDir, config: cfg });
-  if (implicitBedrock) {
-    const existing = providers[BUILTIN_IMPLICIT_BEDROCK_PROVIDER_ID];
-    providers[BUILTIN_IMPLICIT_BEDROCK_PROVIDER_ID] = existing
-      ? mergeProviderModels(implicitBedrock, existing)
-      : implicitBedrock;
-  }
-  const implicitCopilot = await resolveImplicitCopilotProvider({ agentDir });
-  if (implicitCopilot && !providers[BUILTIN_IMPLICIT_COPILOT_PROVIDER_ID]) {
-    providers[BUILTIN_IMPLICIT_COPILOT_PROVIDER_ID] = implicitCopilot;
-  }
+  const providers = await applyImplicitProviderOverlays({
+    providers: baseProviders,
+    agentDir,
+    config: cfg,
+  });
 
   if (Object.keys(providers).length === 0) {
     return { agentDir, wrote: false };

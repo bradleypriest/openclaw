@@ -2,8 +2,8 @@ import type {
   ApplyAuthChoiceParams,
   ApplyAuthChoiceResult,
 } from "../../../commands/auth-choice.apply.js";
-import { githubCopilotLoginCommand } from "../../github-copilot-auth.js";
 import { applyAuthProfileConfig } from "../auth/profile-config.js";
+import { githubCopilotLoginCommand } from "./auth.js";
 
 export async function applyAuthChoiceGitHubCopilot(
   params: ApplyAuthChoiceParams,

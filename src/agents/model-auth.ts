@@ -5,9 +5,9 @@ import type { ModelProviderAuthMode, ModelProviderConfig } from "../config/types
 import { formatCliCommand } from "../cli/command-format.js";
 import { resolveEnvApiKey, type EnvApiKeyResult } from "../providers/auth-env-api-key.js";
 import {
-  resolveAmazonBedrockAwsSdkAuthInfo,
-  resolveAwsSdkEnvVarName as resolveAmazonBedrockAwsSdkEnvVarName,
-} from "../providers/builtin/amazon-bedrock/auth.js";
+  resolveAwsSdkAuthInfo,
+  resolvePreferredAwsSdkEnvVarName,
+} from "../providers/builtin/auth/aws-sdk-auth.js";
 import { resolveBuiltinDefaultAuthMode } from "../providers/builtin/auth/default-auth-mode.js";
 import { resolveProviderMissingApiKeyError } from "../providers/builtin/auth/provider-advisories.js";
 import {
@@ -77,7 +77,7 @@ function resolveEffectiveAuthMode(
 }
 
 export function resolveAwsSdkEnvVarName(env: NodeJS.ProcessEnv = process.env): string | undefined {
-  return resolveAmazonBedrockAwsSdkEnvVarName(env);
+  return resolvePreferredAwsSdkEnvVarName(env);
 }
 
 export type ResolvedProviderAuth = {
@@ -119,7 +119,7 @@ export async function resolveApiKeyForProvider(params: {
 
   const authMode = resolveEffectiveAuthMode(cfg, provider);
   if (authMode === "aws-sdk") {
-    return resolveAmazonBedrockAwsSdkAuthInfo();
+    return resolveAwsSdkAuthInfo();
   }
 
   const order = resolveAuthProfileOrder({

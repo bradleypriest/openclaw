@@ -4,12 +4,12 @@ const loadJsonFile = vi.fn();
 const saveJsonFile = vi.fn();
 const resolveStateDir = vi.fn().mockReturnValue("/tmp/openclaw-state");
 
-vi.mock("../infra/json-file.js", () => ({
+vi.mock("../../../infra/json-file.js", () => ({
   loadJsonFile,
   saveJsonFile,
 }));
 
-vi.mock("../config/paths.js", () => ({
+vi.mock("../../../config/paths.js", () => ({
   resolveStateDir,
 }));
 
@@ -23,7 +23,7 @@ describe("github-copilot token", () => {
   });
 
   it("derives baseUrl from token", async () => {
-    const { deriveCopilotApiBaseUrlFromToken } = await import("./github-copilot-token.js");
+    const { deriveCopilotApiBaseUrlFromToken } = await import("./token.js");
 
     expect(deriveCopilotApiBaseUrlFromToken("token;proxy-ep=proxy.example.com;")).toBe(
       "https://api.example.com",
@@ -41,7 +41,7 @@ describe("github-copilot token", () => {
       updatedAt: now,
     });
 
-    const { resolveCopilotApiToken } = await import("./github-copilot-token.js");
+    const { resolveCopilotApiToken } = await import("./token.js");
 
     const fetchImpl = vi.fn();
     const res = await resolveCopilotApiToken({
@@ -67,7 +67,7 @@ describe("github-copilot token", () => {
       }),
     });
 
-    const { resolveCopilotApiToken } = await import("./github-copilot-token.js");
+    const { resolveCopilotApiToken } = await import("./token.js");
 
     const res = await resolveCopilotApiToken({
       githubToken: "gh",

@@ -151,7 +151,8 @@ export async function compactEmbeddedPiSessionDirect(
         );
       }
     } else if (isCopilotProvider(model.provider)) {
-      const { resolveCopilotApiToken } = await import("../../providers/github-copilot-token.js");
+      const { resolveCopilotApiToken } =
+        await import("../../providers/builtin/github-copilot/token.js");
       const copilotToken = await resolveCopilotApiToken({
         githubToken: apiKeyInfo.apiKey,
       });
