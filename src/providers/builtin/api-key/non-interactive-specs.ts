@@ -1,199 +1,73 @@
 import type { AuthChoice } from "../../../commands/onboard-types.js";
-import type { BuiltinNonInteractiveApiKeySpec } from "./types.js";
 import { normalizeProviderId } from "../../../agents/model-selection.js";
-import { applyGoogleGeminiModelDefault } from "../../../commands/google-gemini-model-default.js";
 import {
-  applyCloudflareAiGatewayConfig,
-  applyKimiCodeConfig,
-  applyMinimaxApiConfig,
-  applyMoonshotConfig,
-  applyMoonshotConfigCn,
-  applyOpencodeZenConfig,
-  applyOpenrouterConfig,
-  applySyntheticConfig,
-  applyVeniceConfig,
-  applyVercelAiGatewayConfig,
-  applyXaiConfig,
-  applyXiaomiConfig,
-  applyZaiConfig,
-} from "../../../commands/onboard-auth.js";
+  CLOUDFLARE_AI_GATEWAY_NON_INTERACTIVE_API_KEY_SPECS,
+  CLOUDFLARE_AI_GATEWAY_PROVIDER_AUTH_CHOICE_ALIASES,
+} from "../cloudflare-ai-gateway/api-key.js";
+import {
+  GOOGLE_NON_INTERACTIVE_API_KEY_SPECS,
+  GOOGLE_PROVIDER_AUTH_CHOICE_ALIASES,
+} from "../google/api-key.js";
+import {
+  KIMI_CODING_NON_INTERACTIVE_API_KEY_SPECS,
+  KIMI_CODING_PROVIDER_AUTH_CHOICE_ALIASES,
+} from "../kimi-coding/api-key.js";
+import {
+  MINIMAX_NON_INTERACTIVE_API_KEY_SPECS,
+  MINIMAX_PROVIDER_AUTH_CHOICE_ALIASES,
+} from "../minimax/api-key.js";
+import {
+  MOONSHOT_NON_INTERACTIVE_API_KEY_SPECS,
+  MOONSHOT_PROVIDER_AUTH_CHOICE_ALIASES,
+} from "../moonshot/api-key.js";
+import { OPENAI_PROVIDER_AUTH_CHOICE_ALIASES } from "../openai/api-key.js";
+import {
+  OPENCODE_NON_INTERACTIVE_API_KEY_SPECS,
+  OPENCODE_PROVIDER_AUTH_CHOICE_ALIASES,
+} from "../opencode/api-key.js";
+import {
+  OPENROUTER_NON_INTERACTIVE_API_KEY_SPECS,
+  OPENROUTER_PROVIDER_AUTH_CHOICE_ALIASES,
+} from "../openrouter/api-key.js";
+import {
+  SYNTHETIC_NON_INTERACTIVE_API_KEY_SPECS,
+  SYNTHETIC_PROVIDER_AUTH_CHOICE_ALIASES,
+} from "../synthetic/api-key.js";
+import {
+  VENICE_NON_INTERACTIVE_API_KEY_SPECS,
+  VENICE_PROVIDER_AUTH_CHOICE_ALIASES,
+} from "../venice/api-key.js";
+import {
+  VERCEL_AI_GATEWAY_NON_INTERACTIVE_API_KEY_SPECS,
+  VERCEL_AI_GATEWAY_PROVIDER_AUTH_CHOICE_ALIASES,
+} from "../vercel-ai-gateway/api-key.js";
+import {
+  XAI_NON_INTERACTIVE_API_KEY_SPECS,
+  XAI_PROVIDER_AUTH_CHOICE_ALIASES,
+} from "../xai/api-key.js";
+import {
+  XIAOMI_NON_INTERACTIVE_API_KEY_SPECS,
+  XIAOMI_PROVIDER_AUTH_CHOICE_ALIASES,
+} from "../xiaomi/api-key.js";
+import {
+  ZAI_NON_INTERACTIVE_API_KEY_SPECS,
+  ZAI_PROVIDER_AUTH_CHOICE_ALIASES,
+} from "../zai/api-key.js";
 
-export const BUILTIN_NON_INTERACTIVE_API_KEY_SPECS: BuiltinNonInteractiveApiKeySpec[] = [
-  {
-    authChoice: "gemini-api-key",
-    providerId: "google",
-    profileId: "google:default",
-    optionKey: "geminiApiKey",
-    flagName: "--gemini-api-key",
-    envVar: "GEMINI_API_KEY",
-    applyConfig: (config) => applyGoogleGeminiModelDefault(config).next,
-  },
-  {
-    authChoice: "zai-api-key",
-    providerId: "zai",
-    profileId: "zai:default",
-    optionKey: "zaiApiKey",
-    flagName: "--zai-api-key",
-    envVar: "ZAI_API_KEY",
-    applyConfig: (config) => applyZaiConfig(config),
-  },
-  {
-    authChoice: "xiaomi-api-key",
-    providerId: "xiaomi",
-    profileId: "xiaomi:default",
-    optionKey: "xiaomiApiKey",
-    flagName: "--xiaomi-api-key",
-    envVar: "XIAOMI_API_KEY",
-    applyConfig: (config) => applyXiaomiConfig(config),
-  },
-  {
-    authChoice: "xai-api-key",
-    providerId: "xai",
-    profileId: "xai:default",
-    optionKey: "xaiApiKey",
-    flagName: "--xai-api-key",
-    envVar: "XAI_API_KEY",
-    applyConfig: (config) => applyXaiConfig(config),
-  },
-  {
-    authChoice: "openrouter-api-key",
-    providerId: "openrouter",
-    profileId: "openrouter:default",
-    optionKey: "openrouterApiKey",
-    flagName: "--openrouter-api-key",
-    envVar: "OPENROUTER_API_KEY",
-    applyConfig: (config) => applyOpenrouterConfig(config),
-  },
-  {
-    authChoice: "ai-gateway-api-key",
-    providerId: "vercel-ai-gateway",
-    profileId: "vercel-ai-gateway:default",
-    optionKey: "aiGatewayApiKey",
-    flagName: "--ai-gateway-api-key",
-    envVar: "AI_GATEWAY_API_KEY",
-    applyConfig: (config) => applyVercelAiGatewayConfig(config),
-  },
-  {
-    authChoice: "cloudflare-ai-gateway-api-key",
-    providerId: "cloudflare-ai-gateway",
-    profileId: "cloudflare-ai-gateway:default",
-    optionKey: "cloudflareAiGatewayApiKey",
-    flagName: "--cloudflare-ai-gateway-api-key",
-    envVar: "CLOUDFLARE_AI_GATEWAY_API_KEY",
-    applyConfig: (config, _authChoice, metadata) =>
-      applyCloudflareAiGatewayConfig(config, {
-        accountId: metadata?.accountId,
-        gatewayId: metadata?.gatewayId,
-      }),
-    resolveMetadata: (opts, runtime) => {
-      const accountId = opts.cloudflareAiGatewayAccountId?.trim() ?? "";
-      const gatewayId = opts.cloudflareAiGatewayGatewayId?.trim() ?? "";
-      if (!accountId || !gatewayId) {
-        runtime.error(
-          [
-            'Auth choice "cloudflare-ai-gateway-api-key" requires Account ID and Gateway ID.',
-            "Use --cloudflare-ai-gateway-account-id and --cloudflare-ai-gateway-gateway-id.",
-          ].join("\n"),
-        );
-        runtime.exit(1);
-        return null;
-      }
-      return { accountId, gatewayId };
-    },
-  },
-  {
-    authChoice: "moonshot-api-key",
-    providerId: "moonshot",
-    profileId: "moonshot:default",
-    optionKey: "moonshotApiKey",
-    flagName: "--moonshot-api-key",
-    envVar: "MOONSHOT_API_KEY",
-    applyConfig: (config) => applyMoonshotConfig(config),
-  },
-  {
-    authChoice: "moonshot-api-key-cn",
-    providerId: "moonshot",
-    profileId: "moonshot:default",
-    optionKey: "moonshotApiKey",
-    flagName: "--moonshot-api-key",
-    envVar: "MOONSHOT_API_KEY",
-    applyConfig: (config) => applyMoonshotConfigCn(config),
-  },
-  {
-    authChoice: "kimi-code-api-key",
-    providerId: "kimi-coding",
-    profileId: "kimi-coding:default",
-    optionKey: "kimiCodeApiKey",
-    flagName: "--kimi-code-api-key",
-    envVar: "KIMI_API_KEY",
-    applyConfig: (config) => applyKimiCodeConfig(config),
-  },
-  {
-    authChoice: "synthetic-api-key",
-    providerId: "synthetic",
-    profileId: "synthetic:default",
-    optionKey: "syntheticApiKey",
-    flagName: "--synthetic-api-key",
-    envVar: "SYNTHETIC_API_KEY",
-    applyConfig: (config) => applySyntheticConfig(config),
-  },
-  {
-    authChoice: "venice-api-key",
-    providerId: "venice",
-    profileId: "venice:default",
-    optionKey: "veniceApiKey",
-    flagName: "--venice-api-key",
-    envVar: "VENICE_API_KEY",
-    applyConfig: (config) => applyVeniceConfig(config),
-  },
-  {
-    authChoice: "minimax-cloud",
-    providerId: "minimax",
-    profileId: "minimax:default",
-    optionKey: "minimaxApiKey",
-    flagName: "--minimax-api-key",
-    envVar: "MINIMAX_API_KEY",
-    applyConfig: (config, authChoice) => {
-      const modelId =
-        authChoice === "minimax-api-lightning" ? "MiniMax-M2.1-lightning" : "MiniMax-M2.1";
-      return applyMinimaxApiConfig(config, modelId);
-    },
-  },
-  {
-    authChoice: "minimax-api",
-    providerId: "minimax",
-    profileId: "minimax:default",
-    optionKey: "minimaxApiKey",
-    flagName: "--minimax-api-key",
-    envVar: "MINIMAX_API_KEY",
-    applyConfig: (config, authChoice) => {
-      const modelId =
-        authChoice === "minimax-api-lightning" ? "MiniMax-M2.1-lightning" : "MiniMax-M2.1";
-      return applyMinimaxApiConfig(config, modelId);
-    },
-  },
-  {
-    authChoice: "minimax-api-lightning",
-    providerId: "minimax",
-    profileId: "minimax:default",
-    optionKey: "minimaxApiKey",
-    flagName: "--minimax-api-key",
-    envVar: "MINIMAX_API_KEY",
-    applyConfig: (config, authChoice) => {
-      const modelId =
-        authChoice === "minimax-api-lightning" ? "MiniMax-M2.1-lightning" : "MiniMax-M2.1";
-      return applyMinimaxApiConfig(config, modelId);
-    },
-  },
-  {
-    authChoice: "opencode-zen",
-    providerId: "opencode",
-    profileId: "opencode:default",
-    optionKey: "opencodeZenApiKey",
-    flagName: "--opencode-zen-api-key",
-    envVar: "OPENCODE_API_KEY (or OPENCODE_ZEN_API_KEY)",
-    applyConfig: (config) => applyOpencodeZenConfig(config),
-  },
+export const BUILTIN_NON_INTERACTIVE_API_KEY_SPECS = [
+  ...GOOGLE_NON_INTERACTIVE_API_KEY_SPECS,
+  ...ZAI_NON_INTERACTIVE_API_KEY_SPECS,
+  ...XIAOMI_NON_INTERACTIVE_API_KEY_SPECS,
+  ...XAI_NON_INTERACTIVE_API_KEY_SPECS,
+  ...OPENROUTER_NON_INTERACTIVE_API_KEY_SPECS,
+  ...VERCEL_AI_GATEWAY_NON_INTERACTIVE_API_KEY_SPECS,
+  ...CLOUDFLARE_AI_GATEWAY_NON_INTERACTIVE_API_KEY_SPECS,
+  ...MOONSHOT_NON_INTERACTIVE_API_KEY_SPECS,
+  ...KIMI_CODING_NON_INTERACTIVE_API_KEY_SPECS,
+  ...SYNTHETIC_NON_INTERACTIVE_API_KEY_SPECS,
+  ...VENICE_NON_INTERACTIVE_API_KEY_SPECS,
+  ...MINIMAX_NON_INTERACTIVE_API_KEY_SPECS,
+  ...OPENCODE_NON_INTERACTIVE_API_KEY_SPECS,
 ];
 
 export const BUILTIN_NON_INTERACTIVE_API_KEY_BY_AUTH_CHOICE = new Map(
@@ -201,21 +75,20 @@ export const BUILTIN_NON_INTERACTIVE_API_KEY_BY_AUTH_CHOICE = new Map(
 );
 
 const BUILTIN_API_KEY_PROVIDER_TO_CHOICE: Record<string, AuthChoice> = {
-  openai: "openai-api-key",
-  openrouter: "openrouter-api-key",
-  "vercel-ai-gateway": "ai-gateway-api-key",
-  "cloudflare-ai-gateway": "cloudflare-ai-gateway-api-key",
-  moonshot: "moonshot-api-key",
-  "kimi-code": "kimi-code-api-key",
-  "kimi-coding": "kimi-code-api-key",
-  google: "gemini-api-key",
-  zai: "zai-api-key",
-  xiaomi: "xiaomi-api-key",
-  xai: "xai-api-key",
-  synthetic: "synthetic-api-key",
-  venice: "venice-api-key",
-  opencode: "opencode-zen",
-  minimax: "minimax-api",
+  ...OPENAI_PROVIDER_AUTH_CHOICE_ALIASES,
+  ...OPENROUTER_PROVIDER_AUTH_CHOICE_ALIASES,
+  ...VERCEL_AI_GATEWAY_PROVIDER_AUTH_CHOICE_ALIASES,
+  ...CLOUDFLARE_AI_GATEWAY_PROVIDER_AUTH_CHOICE_ALIASES,
+  ...MOONSHOT_PROVIDER_AUTH_CHOICE_ALIASES,
+  ...KIMI_CODING_PROVIDER_AUTH_CHOICE_ALIASES,
+  ...GOOGLE_PROVIDER_AUTH_CHOICE_ALIASES,
+  ...ZAI_PROVIDER_AUTH_CHOICE_ALIASES,
+  ...XIAOMI_PROVIDER_AUTH_CHOICE_ALIASES,
+  ...XAI_PROVIDER_AUTH_CHOICE_ALIASES,
+  ...SYNTHETIC_PROVIDER_AUTH_CHOICE_ALIASES,
+  ...VENICE_PROVIDER_AUTH_CHOICE_ALIASES,
+  ...OPENCODE_PROVIDER_AUTH_CHOICE_ALIASES,
+  ...MINIMAX_PROVIDER_AUTH_CHOICE_ALIASES,
 };
 
 export function resolveBuiltinApiKeyAuthChoiceByProvider(

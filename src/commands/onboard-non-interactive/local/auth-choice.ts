@@ -2,26 +2,19 @@ import type { OpenClawConfig } from "../../../config/config.js";
 import type { RuntimeEnv } from "../../../runtime.js";
 import type { AuthChoice, OnboardOptions } from "../../onboard-types.js";
 import { upsertAuthProfile } from "../../../agents/auth-profiles.js";
-import { normalizeProviderId } from "../../../agents/model-selection.js";
-import { parseDurationMs } from "../../../cli/parse-duration.js";
-import { upsertSharedEnvVar } from "../../../infra/env-file.js";
 import { enablePluginInConfig } from "../../../plugins/enable.js";
 import {
   findDeclarativeProviderAuthByChoice,
   findDeclarativeProviderAuthByTokenProvider,
 } from "../../../plugins/provider-auth-manifest.js";
+import { applyAnthropicNonInteractiveAuthChoice } from "../../../providers/builtin/anthropic/non-interactive-auth.js";
 import {
   BUILTIN_NON_INTERACTIVE_API_KEY_BY_AUTH_CHOICE,
   resolveBuiltinApiKeyAuthChoiceByProvider,
 } from "../../../providers/builtin/api-key/non-interactive-specs.js";
-import { shortenHomePath } from "../../../utils.js";
-import { buildTokenProfileId, validateAnthropicSetupToken } from "../../auth-token.js";
-import {
-  applyAuthProfileConfig,
-  applyMinimaxConfig,
-  writeApiKeyCredential,
-} from "../../onboard-auth.js";
-import { applyOpenAIConfig } from "../../openai-model-default.js";
+import { applyMiniMaxNonInteractiveAuthChoice } from "../../../providers/builtin/minimax/non-interactive-auth.js";
+import { applyOpenAINonInteractiveAuthChoice } from "../../../providers/builtin/openai/non-interactive-auth.js";
+import { applyAuthProfileConfig, writeApiKeyCredential } from "../../onboard-auth.js";
 import { resolveNonInteractiveApiKey } from "../api-keys.js";
 
 function applyProviderModelConfig(cfg: OpenClawConfig, modelRef: string): OpenClawConfig {
@@ -199,26 +192,15 @@ export async function applyNonInteractiveAuthChoice(params: {
   const { authChoice, opts, runtime, baseConfig } = params;
   let nextConfig = params.nextConfig;
 
-  if (authChoice === "claude-cli" || authChoice === "codex-cli") {
-    runtime.error(
-      [
-        `Auth choice "${authChoice}" is deprecated.`,
-        'Use "--auth-choice token" (Anthropic setup-token) or "--auth-choice openai-codex".',
-      ].join("\n"),
-    );
-    runtime.exit(1);
-    return null;
-  }
-
-  if (authChoice === "setup-token") {
-    runtime.error(
-      [
-        'Auth choice "setup-token" requires interactive mode.',
-        'Use "--auth-choice token" with --token and --provider anthropic.',
-      ].join("\n"),
-    );
-    runtime.exit(1);
-    return null;
+  const appliedAnthropic = await applyAnthropicNonInteractiveAuthChoice({
+    authChoice,
+    opts,
+    runtime,
+    baseConfig,
+    nextConfig,
+  });
+  if (appliedAnthropic !== undefined) {
+    return appliedAnthropic;
   }
 
   if (authChoice === "apiKey") {
@@ -250,92 +232,13 @@ export async function applyNonInteractiveAuthChoice(params: {
       });
     }
 
-    if (provider && normalizeProviderId(provider) !== "anthropic") {
+    if (provider) {
       runtime.error(
         `Unsupported --provider ${provider} for --auth-choice apiKey. Use --provider <provider-id> or <npm-package>:<provider-id>, or pass an explicit --auth-choice.`,
       );
       runtime.exit(1);
       return null;
     }
-
-    const resolved = await resolveNonInteractiveApiKey({
-      provider: "anthropic",
-      cfg: baseConfig,
-      flagValue: opts.anthropicApiKey,
-      flagName: "--anthropic-api-key",
-      envVar: "ANTHROPIC_API_KEY",
-      runtime,
-    });
-    if (!resolved) {
-      return null;
-    }
-    if (resolved.source !== "profile") {
-      await persistApiKeyProfile({
-        providerId: "anthropic",
-        profileId: "anthropic:default",
-        key: resolved.key,
-      });
-    }
-    return applyAuthProfileConfig(nextConfig, {
-      profileId: "anthropic:default",
-      provider: "anthropic",
-      mode: "api_key",
-    });
-  }
-
-  if (authChoice === "token") {
-    const providerRaw = opts.provider?.trim();
-    if (!providerRaw) {
-      runtime.error("Missing --provider for --auth-choice token.");
-      runtime.exit(1);
-      return null;
-    }
-    const provider = normalizeProviderId(providerRaw);
-    if (provider !== "anthropic") {
-      runtime.error("Only --provider anthropic is supported for --auth-choice token.");
-      runtime.exit(1);
-      return null;
-    }
-    const tokenRaw = opts.token?.trim();
-    if (!tokenRaw) {
-      runtime.error("Missing --token for --auth-choice token.");
-      runtime.exit(1);
-      return null;
-    }
-    const tokenError = validateAnthropicSetupToken(tokenRaw);
-    if (tokenError) {
-      runtime.error(tokenError);
-      runtime.exit(1);
-      return null;
-    }
-
-    let expires: number | undefined;
-    const expiresInRaw = opts.tokenExpiresIn?.trim();
-    if (expiresInRaw) {
-      try {
-        expires = Date.now() + parseDurationMs(expiresInRaw, { defaultUnit: "d" });
-      } catch (err) {
-        runtime.error(`Invalid --token-expires-in: ${String(err)}`);
-        runtime.exit(1);
-        return null;
-      }
-    }
-
-    const profileId = opts.tokenProfileId?.trim() || buildTokenProfileId({ provider, name: "" });
-    upsertAuthProfile({
-      profileId,
-      credential: {
-        type: "token",
-        provider,
-        token: tokenRaw.trim(),
-        ...(expires ? { expires } : {}),
-      },
-    });
-    return applyAuthProfileConfig(nextConfig, {
-      profileId,
-      provider,
-      mode: "token",
-    });
   }
 
   const appliedBuiltin = await applyBuiltinNonInteractiveApiKeyChoice({
@@ -349,28 +252,23 @@ export async function applyNonInteractiveAuthChoice(params: {
     return appliedBuiltin;
   }
 
-  if (authChoice === "openai-api-key") {
-    const resolved = await resolveNonInteractiveApiKey({
-      provider: "openai",
-      cfg: baseConfig,
-      flagValue: opts.openaiApiKey,
-      flagName: "--openai-api-key",
-      envVar: "OPENAI_API_KEY",
-      runtime,
-      allowProfile: false,
-    });
-    if (!resolved) {
-      return null;
-    }
-    const key = resolved.key;
-    const result = upsertSharedEnvVar({ key: "OPENAI_API_KEY", value: key });
-    process.env.OPENAI_API_KEY = key;
-    runtime.log(`Saved OPENAI_API_KEY to ${shortenHomePath(result.path)}`);
-    return applyOpenAIConfig(nextConfig);
+  const appliedOpenAI = await applyOpenAINonInteractiveAuthChoice({
+    authChoice,
+    opts,
+    runtime,
+    baseConfig,
+    nextConfig,
+  });
+  if (appliedOpenAI !== undefined) {
+    return appliedOpenAI;
   }
 
-  if (authChoice === "minimax") {
-    return applyMinimaxConfig(nextConfig);
+  const appliedMinimax = applyMiniMaxNonInteractiveAuthChoice({
+    authChoice,
+    nextConfig,
+  });
+  if (appliedMinimax !== undefined) {
+    return appliedMinimax;
   }
 
   const declarativeChoice = findDeclarativeProviderAuthByChoice(authChoice, {
