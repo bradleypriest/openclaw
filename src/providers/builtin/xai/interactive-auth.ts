@@ -2,16 +2,17 @@ import type {
   ApplyAuthChoiceParams,
   ApplyAuthChoiceResult,
 } from "../../../commands/auth-choice.apply.js";
-import { resolveEnvApiKey } from "../../../agents/model-auth.js";
 import {
   formatApiKeyPreview,
   normalizeApiKeyInput,
   validateApiKeyInput,
 } from "../../../commands/auth-choice.api-key.js";
 import { applyDefaultModelChoice } from "../../../commands/auth-choice.default-model.js";
-import { XAI_DEFAULT_MODEL_REF } from "../../../commands/onboard-auth.credentials.js";
-import { applyAuthProfileConfig, writeApiKeyCredential } from "../../../commands/onboard-auth.js";
+import { resolveEnvApiKey } from "../../auth-env-api-key.js";
+import { writeApiKeyCredential } from "../auth/credentials-store.js";
+import { applyAuthProfileConfig } from "../auth/profile-config.js";
 import { applyXaiConfig, applyXaiProviderConfig } from "./config.js";
+import { XAI_DEFAULT_MODEL_REF } from "./models.js";
 
 export async function applyAuthChoiceXAI(
   params: ApplyAuthChoiceParams,

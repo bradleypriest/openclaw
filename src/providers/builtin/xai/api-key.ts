@@ -1,5 +1,5 @@
-import type { AuthChoice } from "../../../commands/onboard-types.js";
 import type { BuiltinNonInteractiveApiKeySpec } from "../api-key/types.js";
+import type { AuthChoice } from "../auth/onboard-types.js";
 import { applyXaiConfig } from "./config.js";
 
 export const XAI_NON_INTERACTIVE_API_KEY_SPECS: BuiltinNonInteractiveApiKeySpec[] = [

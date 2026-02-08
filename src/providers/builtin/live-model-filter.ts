@@ -1,97 +1,55 @@
+import { normalizeProviderId } from "../provider-id.js";
+import { isAnthropicModernModelId } from "./anthropic/live-models.js";
+import { isGoogleAntigravityModernModelId } from "./google-antigravity/live-models.js";
+import { isGoogleModernModelId } from "./google/live-models.js";
+import { isMiniMaxModernModelId } from "./minimax/live-models.js";
+import { isOpenAiCodexModernModelId, isOpenAiModernModelId } from "./openai/live-models.js";
+import { isOpenCodeModernModelId } from "./opencode/live-models.js";
+import { isOpenRouterModernModelId } from "./openrouter/live-models.js";
+import { isXaiModernModelId } from "./xai/live-models.js";
+import { isZaiModernModelId } from "./zai/live-models.js";
+
 export type BuiltinModernModelRef = {
   provider?: string | null;
   id?: string | null;
 };
 
-const ANTHROPIC_PREFIXES = [
-  "claude-opus-4-6",
-  "claude-opus-4-5",
-  "claude-sonnet-4-5",
-  "claude-haiku-4-5",
-];
-const OPENAI_MODELS = ["gpt-5.2", "gpt-5.0"];
-const CODEX_MODELS = [
-  "gpt-5.2",
-  "gpt-5.2-codex",
-  "gpt-5.3-codex",
-  "gpt-5.1-codex",
-  "gpt-5.1-codex-mini",
-  "gpt-5.1-codex-max",
-];
-const GOOGLE_PREFIXES = ["gemini-3"];
-const ZAI_PREFIXES = ["glm-4.7"];
-const MINIMAX_PREFIXES = ["minimax-m2.1"];
-const XAI_PREFIXES = ["grok-4"];
-
-function matchesPrefix(id: string, prefixes: string[]): boolean {
-  return prefixes.some((prefix) => id.startsWith(prefix));
-}
-
-function matchesExactOrPrefix(id: string, values: string[]): boolean {
-  return values.some((value) => id === value || id.startsWith(value));
-}
-
-function matchesAny(id: string, values: string[]): boolean {
-  return values.some((value) => id.includes(value));
-}
-
 export function isBuiltinModernModelRef(ref: BuiltinModernModelRef): boolean {
-  const provider = ref.provider?.trim().toLowerCase() ?? "";
+  const provider = normalizeProviderId(ref.provider ?? "");
   const id = ref.id?.trim().toLowerCase() ?? "";
   if (!provider || !id) {
     return false;
   }
 
   if (provider === "anthropic") {
-    return matchesPrefix(id, ANTHROPIC_PREFIXES);
+    return isAnthropicModernModelId(id);
   }
-
   if (provider === "openai") {
-    return matchesExactOrPrefix(id, OPENAI_MODELS);
+    return isOpenAiModernModelId(id);
   }
-
   if (provider === "openai-codex") {
-    return matchesExactOrPrefix(id, CODEX_MODELS);
+    return isOpenAiCodexModernModelId(id);
   }
-
   if (provider === "google" || provider === "google-gemini-cli") {
-    return matchesPrefix(id, GOOGLE_PREFIXES);
+    return isGoogleModernModelId(id);
   }
-
   if (provider === "google-antigravity") {
-    return matchesPrefix(id, GOOGLE_PREFIXES) || matchesPrefix(id, ANTHROPIC_PREFIXES);
+    return isGoogleAntigravityModernModelId(id);
   }
-
   if (provider === "zai") {
-    return matchesPrefix(id, ZAI_PREFIXES);
+    return isZaiModernModelId(id);
   }
-
   if (provider === "minimax") {
-    return matchesPrefix(id, MINIMAX_PREFIXES);
+    return isMiniMaxModernModelId(id);
   }
-
   if (provider === "xai") {
-    return matchesPrefix(id, XAI_PREFIXES);
+    return isXaiModernModelId(id);
   }
-
-  if (provider === "opencode" && id.endsWith("-free")) {
-    return false;
+  if (provider === "openrouter") {
+    return isOpenRouterModernModelId(id);
   }
-  if (provider === "opencode" && id === "alpha-glm-4.7") {
-    return false;
+  if (provider === "opencode") {
+    return isOpenCodeModernModelId(id);
   }
-
-  if (provider === "openrouter" || provider === "opencode") {
-    return matchesAny(id, [
-      ...ANTHROPIC_PREFIXES,
-      ...OPENAI_MODELS,
-      ...CODEX_MODELS,
-      ...GOOGLE_PREFIXES,
-      ...ZAI_PREFIXES,
-      ...MINIMAX_PREFIXES,
-      ...XAI_PREFIXES,
-    ]);
-  }
-
   return false;
 }

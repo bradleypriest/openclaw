@@ -1,11 +1,11 @@
 import type { OpenClawConfig } from "../../../config/config.js";
+import { applyPrimaryDefaultModel } from "../default-model.js";
 import {
   buildSyntheticModelDefinition,
   SYNTHETIC_BASE_URL,
   SYNTHETIC_DEFAULT_MODEL_REF,
   SYNTHETIC_MODEL_CATALOG,
-} from "../../../agents/synthetic-models.js";
-import { applyPrimaryDefaultModel } from "../default-model.js";
+} from "./models.js";
 
 export function applySyntheticProviderConfig(cfg: OpenClawConfig): OpenClawConfig {
   const models = { ...cfg.agents?.defaults?.models };

@@ -1,10 +1,13 @@
-import type { AuthChoice } from "../../../commands/onboard-types.js";
 import type {
   BuiltinInteractiveApiKeySpec,
   BuiltinNonInteractiveApiKeySpec,
 } from "../api-key/types.js";
-import { OPENROUTER_DEFAULT_MODEL_REF } from "../../../commands/onboard-auth.credentials.js";
-import { applyOpenrouterConfig, applyOpenrouterProviderConfig } from "./config.js";
+import type { AuthChoice } from "../auth/onboard-types.js";
+import {
+  applyOpenrouterConfig,
+  applyOpenrouterProviderConfig,
+  OPENROUTER_DEFAULT_MODEL_REF,
+} from "./config.js";
 
 export const OPENROUTER_INTERACTIVE_API_KEY_SPECS: BuiltinInteractiveApiKeySpec[] = [
   {

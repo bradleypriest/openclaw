@@ -1,5 +1,5 @@
-import { normalizeProviderId } from "../../../agents/model-selection.js";
 import { getShellEnvAppliedKeys } from "../../../infra/shell-env.js";
+import { normalizeProviderId } from "../../provider-id.js";
 
 const AWS_BEARER_ENV = "AWS_BEARER_TOKEN_BEDROCK";
 const AWS_ACCESS_KEY_ENV = "AWS_ACCESS_KEY_ID";

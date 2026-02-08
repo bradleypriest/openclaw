@@ -1,10 +1,10 @@
-import type { AuthChoice } from "../../../commands/onboard-types.js";
 import type {
   BuiltinInteractiveApiKeySpec,
   BuiltinNonInteractiveApiKeySpec,
 } from "../api-key/types.js";
-import { KIMI_CODING_MODEL_REF } from "../../../commands/onboard-auth.models.js";
+import type { AuthChoice } from "../auth/onboard-types.js";
 import { applyKimiCodeConfig, applyKimiCodeProviderConfig } from "./config.js";
+import { KIMI_CODING_MODEL_REF } from "./models.js";
 
 export const KIMI_CODING_INTERACTIVE_API_KEY_SPECS: BuiltinInteractiveApiKeySpec[] = [
   {

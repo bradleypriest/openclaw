@@ -1,103 +1,27 @@
-import type { AuthChoice } from "../../../commands/onboard-types.js";
-import { normalizeProviderId } from "../../../agents/model-selection.js";
+import type { AuthChoice } from "../auth/onboard-types.js";
+import type { BuiltinNonInteractiveApiKeySpec } from "./types.js";
+import { ensureBuiltinApiKeySpecsRegistered } from "./spec-registry-bootstrap.js";
 import {
-  CLOUDFLARE_AI_GATEWAY_NON_INTERACTIVE_API_KEY_SPECS,
-  CLOUDFLARE_AI_GATEWAY_PROVIDER_AUTH_CHOICE_ALIASES,
-} from "../cloudflare-ai-gateway/api-key.js";
-import {
-  GOOGLE_NON_INTERACTIVE_API_KEY_SPECS,
-  GOOGLE_PROVIDER_AUTH_CHOICE_ALIASES,
-} from "../google/api-key.js";
-import {
-  KIMI_CODING_NON_INTERACTIVE_API_KEY_SPECS,
-  KIMI_CODING_PROVIDER_AUTH_CHOICE_ALIASES,
-} from "../kimi-coding/api-key.js";
-import {
-  MINIMAX_NON_INTERACTIVE_API_KEY_SPECS,
-  MINIMAX_PROVIDER_AUTH_CHOICE_ALIASES,
-} from "../minimax/api-key.js";
-import {
-  MOONSHOT_NON_INTERACTIVE_API_KEY_SPECS,
-  MOONSHOT_PROVIDER_AUTH_CHOICE_ALIASES,
-} from "../moonshot/api-key.js";
-import { OPENAI_PROVIDER_AUTH_CHOICE_ALIASES } from "../openai/api-key.js";
-import {
-  OPENCODE_NON_INTERACTIVE_API_KEY_SPECS,
-  OPENCODE_PROVIDER_AUTH_CHOICE_ALIASES,
-} from "../opencode/api-key.js";
-import {
-  OPENROUTER_NON_INTERACTIVE_API_KEY_SPECS,
-  OPENROUTER_PROVIDER_AUTH_CHOICE_ALIASES,
-} from "../openrouter/api-key.js";
-import {
-  SYNTHETIC_NON_INTERACTIVE_API_KEY_SPECS,
-  SYNTHETIC_PROVIDER_AUTH_CHOICE_ALIASES,
-} from "../synthetic/api-key.js";
-import {
-  VENICE_NON_INTERACTIVE_API_KEY_SPECS,
-  VENICE_PROVIDER_AUTH_CHOICE_ALIASES,
-} from "../venice/api-key.js";
-import {
-  VERCEL_AI_GATEWAY_NON_INTERACTIVE_API_KEY_SPECS,
-  VERCEL_AI_GATEWAY_PROVIDER_AUTH_CHOICE_ALIASES,
-} from "../vercel-ai-gateway/api-key.js";
-import {
-  XAI_NON_INTERACTIVE_API_KEY_SPECS,
-  XAI_PROVIDER_AUTH_CHOICE_ALIASES,
-} from "../xai/api-key.js";
-import {
-  XIAOMI_NON_INTERACTIVE_API_KEY_SPECS,
-  XIAOMI_PROVIDER_AUTH_CHOICE_ALIASES,
-} from "../xiaomi/api-key.js";
-import {
-  ZAI_NON_INTERACTIVE_API_KEY_SPECS,
-  ZAI_PROVIDER_AUTH_CHOICE_ALIASES,
-} from "../zai/api-key.js";
+  listRegisteredBuiltinNonInteractiveApiKeySpecs,
+  resolveRegisteredBuiltinApiKeyAuthChoiceByProvider,
+  resolveRegisteredBuiltinNonInteractiveApiKeySpecByAuthChoice,
+} from "./spec-registry-core.js";
 
-export const BUILTIN_NON_INTERACTIVE_API_KEY_SPECS = [
-  ...GOOGLE_NON_INTERACTIVE_API_KEY_SPECS,
-  ...ZAI_NON_INTERACTIVE_API_KEY_SPECS,
-  ...XIAOMI_NON_INTERACTIVE_API_KEY_SPECS,
-  ...XAI_NON_INTERACTIVE_API_KEY_SPECS,
-  ...OPENROUTER_NON_INTERACTIVE_API_KEY_SPECS,
-  ...VERCEL_AI_GATEWAY_NON_INTERACTIVE_API_KEY_SPECS,
-  ...CLOUDFLARE_AI_GATEWAY_NON_INTERACTIVE_API_KEY_SPECS,
-  ...MOONSHOT_NON_INTERACTIVE_API_KEY_SPECS,
-  ...KIMI_CODING_NON_INTERACTIVE_API_KEY_SPECS,
-  ...SYNTHETIC_NON_INTERACTIVE_API_KEY_SPECS,
-  ...VENICE_NON_INTERACTIVE_API_KEY_SPECS,
-  ...MINIMAX_NON_INTERACTIVE_API_KEY_SPECS,
-  ...OPENCODE_NON_INTERACTIVE_API_KEY_SPECS,
-];
+export function listBuiltinNonInteractiveApiKeySpecs(): BuiltinNonInteractiveApiKeySpec[] {
+  ensureBuiltinApiKeySpecsRegistered();
+  return listRegisteredBuiltinNonInteractiveApiKeySpecs();
+}
 
-export const BUILTIN_NON_INTERACTIVE_API_KEY_BY_AUTH_CHOICE = new Map(
-  BUILTIN_NON_INTERACTIVE_API_KEY_SPECS.map((spec) => [spec.authChoice, spec]),
-);
-
-const BUILTIN_API_KEY_PROVIDER_TO_CHOICE: Record<string, AuthChoice> = {
-  ...OPENAI_PROVIDER_AUTH_CHOICE_ALIASES,
-  ...OPENROUTER_PROVIDER_AUTH_CHOICE_ALIASES,
-  ...VERCEL_AI_GATEWAY_PROVIDER_AUTH_CHOICE_ALIASES,
-  ...CLOUDFLARE_AI_GATEWAY_PROVIDER_AUTH_CHOICE_ALIASES,
-  ...MOONSHOT_PROVIDER_AUTH_CHOICE_ALIASES,
-  ...KIMI_CODING_PROVIDER_AUTH_CHOICE_ALIASES,
-  ...GOOGLE_PROVIDER_AUTH_CHOICE_ALIASES,
-  ...ZAI_PROVIDER_AUTH_CHOICE_ALIASES,
-  ...XIAOMI_PROVIDER_AUTH_CHOICE_ALIASES,
-  ...XAI_PROVIDER_AUTH_CHOICE_ALIASES,
-  ...SYNTHETIC_PROVIDER_AUTH_CHOICE_ALIASES,
-  ...VENICE_PROVIDER_AUTH_CHOICE_ALIASES,
-  ...OPENCODE_PROVIDER_AUTH_CHOICE_ALIASES,
-  ...MINIMAX_PROVIDER_AUTH_CHOICE_ALIASES,
-};
+export function resolveBuiltinNonInteractiveApiKeySpecByAuthChoice(
+  authChoice: AuthChoice,
+): BuiltinNonInteractiveApiKeySpec | undefined {
+  ensureBuiltinApiKeySpecsRegistered();
+  return resolveRegisteredBuiltinNonInteractiveApiKeySpecByAuthChoice(authChoice);
+}
 
 export function resolveBuiltinApiKeyAuthChoiceByProvider(
   providerRaw?: string,
 ): AuthChoice | undefined {
-  const providerInput = providerRaw?.trim();
-  if (!providerInput) {
-    return undefined;
-  }
-  const normalized = normalizeProviderId(providerInput);
-  return BUILTIN_API_KEY_PROVIDER_TO_CHOICE[normalized];
+  ensureBuiltinApiKeySpecsRegistered();
+  return resolveRegisteredBuiltinApiKeyAuthChoiceByProvider(providerRaw);
 }

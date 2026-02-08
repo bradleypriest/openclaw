@@ -1,10 +1,10 @@
-import type { AuthChoice } from "../../../commands/onboard-types.js";
 import type {
   BuiltinInteractiveApiKeySpec,
   BuiltinNonInteractiveApiKeySpec,
 } from "../api-key/types.js";
-import { GOOGLE_GEMINI_DEFAULT_MODEL } from "../../../commands/google-gemini-model-default.js";
+import type { AuthChoice } from "../auth/onboard-types.js";
 import { applyGoogleConfig, applyGoogleProviderConfig } from "./config.js";
+import { GOOGLE_GEMINI_DEFAULT_MODEL } from "./models.js";
 
 export const GOOGLE_INTERACTIVE_API_KEY_SPECS: BuiltinInteractiveApiKeySpec[] = [
   {

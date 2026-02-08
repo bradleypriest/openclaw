@@ -1,7 +1,7 @@
 import type { ApplyAuthChoiceParams } from "../../../commands/auth-choice.apply.js";
-import type { AuthChoice, OnboardOptions } from "../../../commands/onboard-types.js";
 import type { OpenClawConfig } from "../../../config/config.js";
 import type { RuntimeEnv } from "../../../runtime.js";
+import type { AuthChoice, BuiltinOnboardOptions } from "../auth/onboard-types.js";
 
 export type BuiltinProviderContext = {
   accountId?: string;
@@ -24,7 +24,7 @@ export type BuiltinInteractiveApiKeySpec = {
   label: string;
   keyPrompt: string;
   envProvider?: string;
-  optionKey?: keyof OnboardOptions;
+  optionKey?: keyof BuiltinOnboardOptions;
   resolveContext?: (params: ApplyAuthChoiceParams) => Promise<BuiltinProviderContext>;
   resolveCredentialMetadata?: (
     context?: BuiltinProviderContext,
@@ -39,7 +39,7 @@ export type BuiltinNonInteractiveApiKeySpec = {
   authChoice: AuthChoice;
   providerId: string;
   profileId: string;
-  optionKey?: keyof OnboardOptions;
+  optionKey?: keyof BuiltinOnboardOptions;
   flagName: string;
   envVar: string;
   applyConfig: (
@@ -47,5 +47,8 @@ export type BuiltinNonInteractiveApiKeySpec = {
     authChoice: AuthChoice,
     metadata?: Record<string, string>,
   ) => OpenClawConfig;
-  resolveMetadata?: (opts: OnboardOptions, runtime: RuntimeEnv) => Record<string, string> | null;
+  resolveMetadata?: (
+    opts: BuiltinOnboardOptions,
+    runtime: RuntimeEnv,
+  ) => Record<string, string> | null;
 };

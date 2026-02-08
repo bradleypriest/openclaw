@@ -1,6 +1,6 @@
 import type { OpenClawConfig } from "../../../config/config.js";
-import { OPENCODE_ZEN_DEFAULT_MODEL_REF } from "../../../agents/opencode-zen-models.js";
 import { applyPrimaryDefaultModel } from "../default-model.js";
+import { OPENCODE_ZEN_DEFAULT_MODEL_REF } from "./models.js";
 
 export function applyOpencodeZenProviderConfig(cfg: OpenClawConfig): OpenClawConfig {
   const models = { ...cfg.agents?.defaults?.models };

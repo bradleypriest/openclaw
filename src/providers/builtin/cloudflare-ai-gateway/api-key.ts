@@ -1,13 +1,13 @@
-import type { AuthChoice } from "../../../commands/onboard-types.js";
 import type {
   BuiltinInteractiveApiKeySpec,
   BuiltinNonInteractiveApiKeySpec,
 } from "../api-key/types.js";
-import { CLOUDFLARE_AI_GATEWAY_DEFAULT_MODEL_REF } from "../../../commands/onboard-auth.credentials.js";
+import type { AuthChoice } from "../auth/onboard-types.js";
 import {
   applyCloudflareAiGatewayConfig,
   applyCloudflareAiGatewayProviderConfig,
 } from "./config.js";
+import { CLOUDFLARE_AI_GATEWAY_DEFAULT_MODEL_REF } from "./models.js";
 
 export const CLOUDFLARE_AI_GATEWAY_INTERACTIVE_API_KEY_SPECS: BuiltinInteractiveApiKeySpec[] = [
   {

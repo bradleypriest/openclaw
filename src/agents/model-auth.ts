@@ -3,15 +3,13 @@ import path from "node:path";
 import type { OpenClawConfig } from "../config/config.js";
 import type { ModelProviderAuthMode, ModelProviderConfig } from "../config/types.js";
 import { formatCliCommand } from "../cli/command-format.js";
-import { getShellEnvAppliedKeys } from "../infra/shell-env.js";
-import { resolveProviderEnvApiKey } from "../providers/auth-env-vars.js";
+import { resolveEnvApiKey, type EnvApiKeyResult } from "../providers/auth-env-api-key.js";
 import {
   resolveAmazonBedrockAwsSdkAuthInfo,
   resolveAwsSdkEnvVarName as resolveAmazonBedrockAwsSdkEnvVarName,
 } from "../providers/builtin/amazon-bedrock/auth.js";
 import { resolveBuiltinDefaultAuthMode } from "../providers/builtin/auth/default-auth-mode.js";
 import { resolveProviderMissingApiKeyError } from "../providers/builtin/auth/provider-advisories.js";
-import { ensureBuiltinProviderEnvApiKeyResolversRegistered } from "../providers/builtin/env-resolvers.js";
 import {
   type AuthProfileStore,
   ensureAuthProfileStore,
@@ -180,27 +178,9 @@ export async function resolveApiKeyForProvider(params: {
   );
 }
 
-export type EnvApiKeyResult = { apiKey: string; source: string };
 export type ModelAuthMode = "api-key" | "oauth" | "token" | "mixed" | "aws-sdk" | "unknown";
-
-export function resolveEnvApiKey(provider: string): EnvApiKeyResult | null {
-  ensureBuiltinProviderEnvApiKeyResolversRegistered();
-  const normalized = normalizeProviderId(provider);
-  const applied = new Set(getShellEnvAppliedKeys());
-  const pick = (envVar: string): EnvApiKeyResult | null => {
-    const value = process.env[envVar]?.trim();
-    if (!value) {
-      return null;
-    }
-    const source = applied.has(envVar) ? `shell env: ${envVar}` : `env: ${envVar}`;
-    return { apiKey: value, source };
-  };
-
-  return resolveProviderEnvApiKey({
-    provider: normalized,
-    resolveEnvVar: pick,
-  });
-}
+export { resolveEnvApiKey };
+export type { EnvApiKeyResult };
 
 export function resolveModelAuthMode(
   provider?: string,

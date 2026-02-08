@@ -1,5 +1,5 @@
-import type { AuthChoice } from "../../../commands/onboard-types.js";
 import type { OpenClawConfig } from "../../../config/config.js";
+import type { AuthChoice } from "../auth/onboard-types.js";
 import { applyMinimaxConfig } from "./config.js";
 
 export function applyMiniMaxNonInteractiveAuthChoice(params: {

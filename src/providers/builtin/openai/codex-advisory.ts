@@ -1,6 +1,6 @@
 import type { AuthProfileStore } from "../../../agents/auth-profiles.js";
 import { listProfilesForProvider } from "../../../agents/auth-profiles.js";
-import { OPENAI_CODEX_DEFAULT_MODEL } from "../../../commands/openai-codex-model-default.js";
+import { OPENAI_CODEX_DEFAULT_MODEL } from "./models.js";
 
 export function hasOpenAICodexOAuthProfile(store: AuthProfileStore): boolean {
   return listProfilesForProvider(store, "openai-codex").length > 0;

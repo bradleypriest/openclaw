@@ -8,8 +8,9 @@ import {
   normalizeApiKeyInput,
   validateApiKeyInput,
 } from "../../../commands/auth-choice.api-key.js";
-import { buildTokenProfileId, validateAnthropicSetupToken } from "../../../commands/auth-token.js";
-import { applyAuthProfileConfig, writeApiKeyCredential } from "../../../commands/onboard-auth.js";
+import { writeApiKeyCredential } from "../auth/credentials-store.js";
+import { applyAuthProfileConfig } from "../auth/profile-config.js";
+import { buildTokenProfileId, validateAnthropicSetupToken } from "../auth/token-profile.js";
 
 export async function applyAuthChoiceAnthropic(
   params: ApplyAuthChoiceParams,

@@ -1,10 +1,10 @@
-import type { AuthChoice } from "../../../commands/onboard-types.js";
 import type {
   BuiltinInteractiveApiKeySpec,
   BuiltinNonInteractiveApiKeySpec,
 } from "../api-key/types.js";
-import { SYNTHETIC_DEFAULT_MODEL_REF } from "../../../agents/synthetic-models.js";
+import type { AuthChoice } from "../auth/onboard-types.js";
 import { applySyntheticConfig, applySyntheticProviderConfig } from "./config.js";
+import { SYNTHETIC_DEFAULT_MODEL_REF } from "./models.js";
 
 export const SYNTHETIC_INTERACTIVE_API_KEY_SPECS: BuiltinInteractiveApiKeySpec[] = [
   {

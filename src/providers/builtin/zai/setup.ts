@@ -1,6 +1,6 @@
 import type { OpenClawConfig } from "../../../config/config.js";
-import { ZAI_DEFAULT_MODEL_REF } from "../../../commands/onboard-auth.credentials.js";
 import { registerProviderSetupHook } from "../../setup-hooks.js";
+import { ZAI_DEFAULT_MODEL_REF } from "./constants.js";
 
 export const ZAI_PROVIDER_CONFIG_HOOK_ID = "builtin:zai:provider-config";
 

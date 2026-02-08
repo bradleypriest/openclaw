@@ -1,5 +1,5 @@
 import { normalizeProviderId } from "../../provider-id.js";
-import { BUILTIN_NON_INTERACTIVE_API_KEY_SPECS } from "../api-key/non-interactive-specs.js";
+import { listBuiltinNonInteractiveApiKeySpecs } from "../api-key/non-interactive-specs.js";
 
 const EXTRA_PROVIDER_ENV_VAR_CANDIDATES: Record<string, string[]> = {
   "github-copilot": ["COPILOT_GITHUB_TOKEN", "GH_TOKEN", "GITHUB_TOKEN"],
@@ -34,7 +34,7 @@ const BUILTIN_PROVIDER_ENV_VAR_CANDIDATES: Record<string, string[]> = (() => {
     map.set(provider, current);
   };
 
-  for (const spec of BUILTIN_NON_INTERACTIVE_API_KEY_SPECS) {
+  for (const spec of listBuiltinNonInteractiveApiKeySpecs()) {
     add(spec.providerId, spec.envVar);
   }
 

@@ -1,10 +1,10 @@
 import type { OpenClawConfig } from "../../../config/config.js";
+import { applyPrimaryDefaultModel } from "../default-model.js";
 import {
+  CLOUDFLARE_AI_GATEWAY_DEFAULT_MODEL_REF,
   buildCloudflareAiGatewayModelDefinition,
   resolveCloudflareAiGatewayBaseUrl,
-} from "../../../agents/cloudflare-ai-gateway.js";
-import { CLOUDFLARE_AI_GATEWAY_DEFAULT_MODEL_REF } from "../../../commands/onboard-auth.credentials.js";
-import { applyPrimaryDefaultModel } from "../default-model.js";
+} from "./models.js";
 
 export function applyCloudflareAiGatewayProviderConfig(
   cfg: OpenClawConfig,

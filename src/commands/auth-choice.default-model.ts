@@ -1,6 +1,6 @@
 import type { OpenClawConfig } from "../config/config.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
-import { ensureModelAllowlistEntry } from "./model-allowlist.js";
+import { ensureModelAllowlistEntry } from "../providers/model-allowlist.js";
 
 export async function applyDefaultModelChoice(params: {
   config: OpenClawConfig;

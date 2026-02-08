@@ -1,5 +1,5 @@
 import type { OpenClawConfig } from "../../../config/types.js";
-import { parseModelRef } from "../../../agents/model-selection.js";
+import { normalizeProviderId } from "../../provider-id.js";
 
 type AnthropicAuthDefaultsMode = "api_key" | "oauth";
 
@@ -7,6 +7,27 @@ const ANTHROPIC_PRIMARY_MODEL_ALIASES: Readonly<Record<string, string>> = {
   opus: "anthropic/claude-opus-4-6",
   sonnet: "anthropic/claude-sonnet-4-5",
 };
+
+function parseModelRef(
+  raw: string,
+  defaultProvider: string,
+): { provider: string; model: string } | null {
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return null;
+  }
+  const slash = trimmed.indexOf("/");
+  if (slash === -1) {
+    return { provider: normalizeProviderId(defaultProvider), model: trimmed };
+  }
+  const providerRaw = trimmed.slice(0, slash).trim();
+  const model = trimmed.slice(slash + 1).trim();
+  const provider = normalizeProviderId(providerRaw);
+  if (!provider || !model) {
+    return null;
+  }
+  return { provider, model };
+}
 
 function resolveAnthropicDefaultAuthMode(cfg: OpenClawConfig): AnthropicAuthDefaultsMode | null {
   const profiles = cfg.auth?.profiles ?? {};

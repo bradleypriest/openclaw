@@ -11,8 +11,8 @@ import {
   normalizeProviderId,
   resolveConfiguredModelRef,
 } from "../agents/model-selection.js";
+import { OPENAI_CODEX_DEFAULT_MODEL } from "../providers/builtin/openai/models.js";
 import { formatTokenK } from "./models/shared.js";
-import { OPENAI_CODEX_DEFAULT_MODEL } from "./openai-codex-model-default.js";
 
 const KEEP_VALUE = "__keep__";
 const MANUAL_VALUE = "__manual__";

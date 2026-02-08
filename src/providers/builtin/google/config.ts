@@ -1,7 +1,7 @@
 import type { OpenClawConfig } from "../../../config/config.js";
-import { GOOGLE_GEMINI_DEFAULT_MODEL } from "../../../commands/google-gemini-model-default.js";
-import { ensureModelAllowlistEntry } from "../../../commands/model-allowlist.js";
+import { ensureModelAllowlistEntry } from "../../model-allowlist.js";
 import { applyPrimaryDefaultModel } from "../default-model.js";
+import { GOOGLE_GEMINI_DEFAULT_MODEL } from "./models.js";
 
 export function applyGoogleProviderConfig(cfg: OpenClawConfig): OpenClawConfig {
   return ensureModelAllowlistEntry({

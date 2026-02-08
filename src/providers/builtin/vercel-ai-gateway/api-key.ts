@@ -1,10 +1,13 @@
-import type { AuthChoice } from "../../../commands/onboard-types.js";
 import type {
   BuiltinInteractiveApiKeySpec,
   BuiltinNonInteractiveApiKeySpec,
 } from "../api-key/types.js";
-import { VERCEL_AI_GATEWAY_DEFAULT_MODEL_REF } from "../../../commands/onboard-auth.credentials.js";
-import { applyVercelAiGatewayConfig, applyVercelAiGatewayProviderConfig } from "./config.js";
+import type { AuthChoice } from "../auth/onboard-types.js";
+import {
+  applyVercelAiGatewayConfig,
+  applyVercelAiGatewayProviderConfig,
+  VERCEL_AI_GATEWAY_DEFAULT_MODEL_REF,
+} from "./config.js";
 
 export const VERCEL_AI_GATEWAY_INTERACTIVE_API_KEY_SPECS: BuiltinInteractiveApiKeySpec[] = [
   {

@@ -1,6 +1,6 @@
-import type { AuthChoice } from "../../../commands/onboard-types.js";
-import { normalizeProviderId } from "../../../agents/model-selection.js";
-import { BUILTIN_TOKEN_PROVIDER_TO_AUTH_CHOICE } from "../api-key/interactive-specs.js";
+import type { AuthChoice } from "./onboard-types.js";
+import { normalizeProviderId } from "../../provider-id.js";
+import { resolveBuiltinAuthChoiceByInteractiveTokenProvider } from "../api-key/interactive-specs.js";
 import { OPENAI_PROVIDER_AUTH_CHOICE_ALIASES } from "../openai/api-key.js";
 
 const BUILTIN_ADDITIONAL_TOKEN_PROVIDER_TO_AUTH_CHOICE: Record<string, AuthChoice> = {
@@ -17,9 +17,9 @@ export function resolveBuiltinAuthChoiceByTokenProvider(
   }
 
   const normalized = normalizeProviderId(tokenProvider);
-  const mapped = BUILTIN_TOKEN_PROVIDER_TO_AUTH_CHOICE.get(normalized);
+  const mapped = resolveBuiltinAuthChoiceByInteractiveTokenProvider(normalized);
   if (mapped) {
-    return mapped as AuthChoice;
+    return mapped;
   }
   return BUILTIN_ADDITIONAL_TOKEN_PROVIDER_TO_AUTH_CHOICE[normalized];
 }

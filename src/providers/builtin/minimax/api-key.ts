@@ -1,5 +1,5 @@
-import type { AuthChoice } from "../../../commands/onboard-types.js";
 import type { BuiltinNonInteractiveApiKeySpec } from "../api-key/types.js";
+import type { AuthChoice } from "../auth/onboard-types.js";
 import { applyMinimaxApiConfig } from "./config.js";
 
 function applyMinimaxApiChoice(

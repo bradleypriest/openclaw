@@ -1,15 +1,15 @@
-import type { AuthChoice } from "../../../commands/onboard-types.js";
 import type {
   BuiltinInteractiveApiKeySpec,
   BuiltinNonInteractiveApiKeySpec,
 } from "../api-key/types.js";
-import { MOONSHOT_DEFAULT_MODEL_REF } from "../../../commands/onboard-auth.models.js";
+import type { AuthChoice } from "../auth/onboard-types.js";
 import {
   applyMoonshotConfig,
   applyMoonshotConfigCn,
   applyMoonshotProviderConfig,
   applyMoonshotProviderConfigCn,
 } from "./config.js";
+import { MOONSHOT_DEFAULT_MODEL_REF } from "./models.js";
 
 export const MOONSHOT_INTERACTIVE_API_KEY_SPECS: BuiltinInteractiveApiKeySpec[] = [
   {

@@ -1,7 +1,8 @@
 import type { OpenClawConfig } from "../../../config/config.js";
-import { XIAOMI_DEFAULT_MODEL_REF } from "../../../commands/onboard-auth.credentials.js";
 import { applyPrimaryDefaultModel } from "../default-model.js";
-import { buildXiaomiProvider, XIAOMI_DEFAULT_MODEL_ID } from "../implicit-providers.js";
+import { buildXiaomiProviderConfig, XIAOMI_DEFAULT_MODEL_ID } from "./models.js";
+
+export const XIAOMI_DEFAULT_MODEL_REF = "xiaomi/mimo-v2-flash";
 
 export function applyXiaomiProviderConfig(cfg: OpenClawConfig): OpenClawConfig {
   const models = { ...cfg.agents?.defaults?.models };
@@ -12,7 +13,7 @@ export function applyXiaomiProviderConfig(cfg: OpenClawConfig): OpenClawConfig {
 
   const providers = { ...cfg.models?.providers };
   const existingProvider = providers.xiaomi;
-  const defaultProvider = buildXiaomiProvider();
+  const defaultProvider = buildXiaomiProviderConfig();
   const existingModels = Array.isArray(existingProvider?.models) ? existingProvider.models : [];
   const defaultModels = defaultProvider.models ?? [];
   const hasDefaultModel = existingModels.some((model) => model.id === XIAOMI_DEFAULT_MODEL_ID);

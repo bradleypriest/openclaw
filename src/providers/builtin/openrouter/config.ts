@@ -1,6 +1,7 @@
 import type { OpenClawConfig } from "../../../config/config.js";
-import { OPENROUTER_DEFAULT_MODEL_REF } from "../../../commands/onboard-auth.credentials.js";
 import { applyPrimaryDefaultModel } from "../default-model.js";
+
+export const OPENROUTER_DEFAULT_MODEL_REF = "openrouter/auto";
 
 export function applyOpenrouterProviderConfig(cfg: OpenClawConfig): OpenClawConfig {
   const models = { ...cfg.agents?.defaults?.models };

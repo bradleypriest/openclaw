@@ -1,16 +1,17 @@
-import type { AuthChoice, OnboardOptions } from "../../../commands/onboard-types.js";
 import type { OpenClawConfig } from "../../../config/config.js";
 import type { RuntimeEnv } from "../../../runtime.js";
+import type { AuthChoice, BuiltinOnboardOptions } from "../auth/onboard-types.js";
 import { upsertAuthProfile } from "../../../agents/auth-profiles.js";
-import { normalizeProviderId } from "../../../agents/model-selection.js";
 import { parseDurationMs } from "../../../cli/parse-duration.js";
-import { buildTokenProfileId, validateAnthropicSetupToken } from "../../../commands/auth-token.js";
-import { applyAuthProfileConfig, writeApiKeyCredential } from "../../../commands/onboard-auth.js";
-import { resolveNonInteractiveApiKey } from "../../../commands/onboard-non-interactive/api-keys.js";
+import { normalizeProviderId } from "../../provider-id.js";
+import { writeApiKeyCredential } from "../auth/credentials-store.js";
+import { applyAuthProfileConfig } from "../auth/profile-config.js";
+import { buildTokenProfileId, validateAnthropicSetupToken } from "../auth/token-profile.js";
+import { resolveNonInteractiveApiKey } from "../non-interactive/api-key-resolver.js";
 
 export async function applyAnthropicNonInteractiveAuthChoice(params: {
   authChoice: AuthChoice;
-  opts: OnboardOptions;
+  opts: BuiltinOnboardOptions;
   runtime: RuntimeEnv;
   baseConfig: OpenClawConfig;
   nextConfig: OpenClawConfig;

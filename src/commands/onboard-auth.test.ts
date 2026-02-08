@@ -4,26 +4,37 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
-  applyAuthProfileConfig,
-  applyMinimaxApiConfig,
-  applyMinimaxApiProviderConfig,
-  applyOpencodeZenConfig,
-  applyOpencodeZenProviderConfig,
-  applyOpenrouterConfig,
-  applyOpenrouterProviderConfig,
-  applySyntheticConfig,
-  applySyntheticProviderConfig,
-  applyXaiConfig,
-  applyXaiProviderConfig,
-  applyXiaomiConfig,
-  applyXiaomiProviderConfig,
-  OPENROUTER_DEFAULT_MODEL_REF,
-  SYNTHETIC_DEFAULT_MODEL_ID,
-  SYNTHETIC_DEFAULT_MODEL_REF,
-  XAI_DEFAULT_MODEL_REF,
   writeApiKeyCredential,
   writeOAuthCredentials,
-} from "./onboard-auth.js";
+} from "../providers/builtin/auth/credentials-store.js";
+import { applyAuthProfileConfig } from "../providers/builtin/auth/profile-config.js";
+import {
+  applyMinimaxApiConfig,
+  applyMinimaxApiProviderConfig,
+} from "../providers/builtin/minimax/config.js";
+import {
+  applyOpencodeZenConfig,
+  applyOpencodeZenProviderConfig,
+} from "../providers/builtin/opencode/config.js";
+import {
+  applyOpenrouterConfig,
+  applyOpenrouterProviderConfig,
+  OPENROUTER_DEFAULT_MODEL_REF,
+} from "../providers/builtin/openrouter/config.js";
+import {
+  applySyntheticConfig,
+  applySyntheticProviderConfig,
+} from "../providers/builtin/synthetic/config.js";
+import {
+  SYNTHETIC_DEFAULT_MODEL_ID,
+  SYNTHETIC_DEFAULT_MODEL_REF,
+} from "../providers/builtin/synthetic/models.js";
+import { applyXaiConfig, applyXaiProviderConfig } from "../providers/builtin/xai/config.js";
+import { XAI_DEFAULT_MODEL_REF } from "../providers/builtin/xai/models.js";
+import {
+  applyXiaomiConfig,
+  applyXiaomiProviderConfig,
+} from "../providers/builtin/xiaomi/config.js";
 
 const authProfilePathFor = (agentDir: string) => path.join(agentDir, "auth-profiles.json");
 const requireAgentDir = () => {

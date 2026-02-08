@@ -1,30 +1,37 @@
 import type { Command } from "commander";
 import {
-  githubCopilotLoginCommand,
   modelsAliasesAddCommand,
   modelsAliasesListCommand,
   modelsAliasesRemoveCommand,
-  modelsAuthAddCommand,
-  modelsAuthLoginCommand,
+} from "../commands/models/aliases.js";
+import {
   modelsAuthOrderClearCommand,
   modelsAuthOrderGetCommand,
   modelsAuthOrderSetCommand,
+} from "../commands/models/auth-order.js";
+import {
+  modelsAuthAddCommand,
+  modelsAuthLoginCommand,
   modelsAuthPasteTokenCommand,
   modelsAuthSetupTokenCommand,
+} from "../commands/models/auth.js";
+import {
   modelsFallbacksAddCommand,
   modelsFallbacksClearCommand,
   modelsFallbacksListCommand,
   modelsFallbacksRemoveCommand,
+} from "../commands/models/fallbacks.js";
+import {
   modelsImageFallbacksAddCommand,
   modelsImageFallbacksClearCommand,
   modelsImageFallbacksListCommand,
   modelsImageFallbacksRemoveCommand,
-  modelsListCommand,
-  modelsScanCommand,
-  modelsSetCommand,
-  modelsSetImageCommand,
-  modelsStatusCommand,
-} from "../commands/models.js";
+} from "../commands/models/image-fallbacks.js";
+import { modelsListCommand, modelsStatusCommand } from "../commands/models/list.js";
+import { modelsScanCommand } from "../commands/models/scan.js";
+import { modelsSetImageCommand } from "../commands/models/set-image.js";
+import { modelsSetCommand } from "../commands/models/set.js";
+import { githubCopilotLoginCommand } from "../providers/github-copilot-auth.js";
 import { defaultRuntime } from "../runtime.js";
 import { formatDocsLink } from "../terminal/links.js";
 import { theme } from "../terminal/theme.js";

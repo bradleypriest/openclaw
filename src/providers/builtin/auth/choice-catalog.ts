@@ -1,4 +1,4 @@
-import type { AuthChoice } from "../../../commands/onboard-types.js";
+import type { AuthChoice } from "./onboard-types.js";
 
 export type BuiltinAuthChoiceCatalogEntry = {
   choice: AuthChoice;

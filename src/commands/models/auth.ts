@@ -19,6 +19,7 @@ import { parseDurationMs } from "../../cli/parse-duration.js";
 import { readConfigFileSnapshot, type OpenClawConfig } from "../../config/config.js";
 import { logConfigUpdated } from "../../config/logging.js";
 import { resolvePluginProviders } from "../../plugins/providers.js";
+import { applyAuthProfileConfig } from "../../providers/builtin/auth/profile-config.js";
 import {
   listBuiltinSetupTokenProviderSpecs,
   resolveBuiltinSetupTokenProviderSpec,
@@ -28,7 +29,6 @@ import { stylePromptHint, stylePromptMessage } from "../../terminal/prompt-style
 import { createClackPrompter } from "../../wizard/clack-prompter.js";
 import { isRemoteEnvironment } from "../oauth-env.js";
 import { createVpsAwareOAuthHandlers } from "../oauth-flow.js";
-import { applyAuthProfileConfig } from "../onboard-auth.js";
 import { openUrl } from "../onboard-helpers.js";
 import { updateConfig } from "./shared.js";
 

@@ -24,9 +24,13 @@ const findDeclarativeProviderAuthByChoice = vi.hoisted(() =>
 const findDeclarativeProviderAuthByTokenProvider = vi.hoisted(() =>
   vi.fn<(provider: string) => Record<string, unknown> | undefined>(() => undefined),
 );
+const findDeclarativeProviderAuthByProvider = vi.hoisted(() =>
+  vi.fn<(provider: string) => Record<string, unknown> | undefined>(() => undefined),
+);
 vi.mock("../plugins/provider-auth-manifest.js", () => ({
   findDeclarativeProviderAuthByChoice,
   findDeclarativeProviderAuthByTokenProvider,
+  findDeclarativeProviderAuthByProvider,
 }));
 
 const noopAsync = async () => {};
@@ -58,6 +62,8 @@ describe("applyAuthChoice", () => {
     findDeclarativeProviderAuthByChoice.mockReturnValue(undefined);
     findDeclarativeProviderAuthByTokenProvider.mockReset();
     findDeclarativeProviderAuthByTokenProvider.mockReturnValue(undefined);
+    findDeclarativeProviderAuthByProvider.mockReset();
+    findDeclarativeProviderAuthByProvider.mockReturnValue(undefined);
     if (tempStateDir) {
       await fs.rm(tempStateDir, { recursive: true, force: true });
       tempStateDir = null;

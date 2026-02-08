@@ -3,14 +3,23 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const githubCopilotLoginCommand = vi.fn();
 const modelsStatusCommand = vi.fn().mockResolvedValue(undefined);
 
-vi.mock("../commands/models.js", async () => {
-  const actual =
-    await vi.importActual<typeof import("../commands/models.js")>("../commands/models.js");
+vi.mock("../commands/models/list.js", async () => {
+  const actual = await vi.importActual<typeof import("../commands/models/list.js")>(
+    "../commands/models/list.js",
+  );
+  return {
+    ...actual,
+    modelsStatusCommand,
+  };
+});
 
+vi.mock("../providers/github-copilot-auth.js", async () => {
+  const actual = await vi.importActual<typeof import("../providers/github-copilot-auth.js")>(
+    "../providers/github-copilot-auth.js",
+  );
   return {
     ...actual,
     githubCopilotLoginCommand,
-    modelsStatusCommand,
   };
 });
 

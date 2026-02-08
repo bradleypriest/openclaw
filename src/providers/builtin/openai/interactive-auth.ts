@@ -3,7 +3,6 @@ import type {
   ApplyAuthChoiceParams,
   ApplyAuthChoiceResult,
 } from "../../../commands/auth-choice.apply.js";
-import { resolveEnvApiKey } from "../../../agents/model-auth.js";
 import {
   formatApiKeyPreview,
   normalizeApiKeyInput,
@@ -12,18 +11,14 @@ import {
 import { applyDefaultModelChoice } from "../../../commands/auth-choice.default-model.js";
 import { isRemoteEnvironment } from "../../../commands/oauth-env.js";
 import { createVpsAwareOAuthHandlers } from "../../../commands/oauth-flow.js";
-import { applyAuthProfileConfig, writeOAuthCredentials } from "../../../commands/onboard-auth.js";
 import { openUrl } from "../../../commands/onboard-helpers.js";
-import {
-  applyOpenAICodexModelDefault,
-  OPENAI_CODEX_DEFAULT_MODEL,
-} from "../../../commands/openai-codex-model-default.js";
-import {
-  applyOpenAIConfig,
-  applyOpenAIProviderConfig,
-  OPENAI_DEFAULT_MODEL,
-} from "../../../commands/openai-model-default.js";
 import { upsertSharedEnvVar } from "../../../infra/env-file.js";
+import { resolveEnvApiKey } from "../../auth-env-api-key.js";
+import { writeOAuthCredentials } from "../auth/credentials-store.js";
+import { applyAuthProfileConfig } from "../auth/profile-config.js";
+import { applyOpenAICodexModelDefault } from "./codex-default-model.js";
+import { applyOpenAIConfig, applyOpenAIProviderConfig } from "./default-model.js";
+import { OPENAI_CODEX_DEFAULT_MODEL, OPENAI_DEFAULT_MODEL } from "./models.js";
 
 export async function applyAuthChoiceOpenAI(
   params: ApplyAuthChoiceParams,

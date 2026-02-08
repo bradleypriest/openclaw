@@ -1,14 +1,14 @@
-import type { AuthChoice, OnboardOptions } from "../../../commands/onboard-types.js";
 import type { OpenClawConfig } from "../../../config/config.js";
 import type { RuntimeEnv } from "../../../runtime.js";
-import { resolveNonInteractiveApiKey } from "../../../commands/onboard-non-interactive/api-keys.js";
-import { applyOpenAIConfig } from "../../../commands/openai-model-default.js";
+import type { AuthChoice, BuiltinOnboardOptions } from "../auth/onboard-types.js";
 import { upsertSharedEnvVar } from "../../../infra/env-file.js";
 import { shortenHomePath } from "../../../utils.js";
+import { resolveNonInteractiveApiKey } from "../non-interactive/api-key-resolver.js";
+import { applyOpenAIConfig } from "./default-model.js";
 
 export async function applyOpenAINonInteractiveAuthChoice(params: {
   authChoice: AuthChoice;
-  opts: OnboardOptions;
+  opts: BuiltinOnboardOptions;
   runtime: RuntimeEnv;
   baseConfig: OpenClawConfig;
   nextConfig: OpenClawConfig;

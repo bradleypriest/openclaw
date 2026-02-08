@@ -1,9 +1,9 @@
-import type { AuthChoice, OnboardOptions } from "../../../commands/onboard-types.js";
+import type { AuthChoice, BuiltinOnboardOptions } from "../auth/onboard-types.js";
 import { normalizeProviderId } from "../../provider-id.js";
-import { BUILTIN_NON_INTERACTIVE_API_KEY_SPECS } from "../api-key/non-interactive-specs.js";
+import { listBuiltinNonInteractiveApiKeySpecs } from "../api-key/non-interactive-specs.js";
 
 export type BuiltinNonInteractiveAuthChoiceFlag = {
-  flag: keyof OnboardOptions;
+  flag: keyof BuiltinOnboardOptions;
   authChoice: AuthChoice;
   label: string;
 };
@@ -17,7 +17,7 @@ const EXTRA_FLAGS: BuiltinNonInteractiveAuthChoiceFlag[] = [
 const BUILTIN_NON_INTERACTIVE_AUTH_CHOICE_FLAGS: BuiltinNonInteractiveAuthChoiceFlag[] = (() => {
   const flags = [...EXTRA_FLAGS];
   const seen = new Set(flags.map((entry) => entry.flag));
-  for (const spec of BUILTIN_NON_INTERACTIVE_API_KEY_SPECS) {
+  for (const spec of listBuiltinNonInteractiveApiKeySpecs()) {
     if (!spec.optionKey || seen.has(spec.optionKey)) {
       continue;
     }
@@ -31,13 +31,13 @@ const BUILTIN_NON_INTERACTIVE_AUTH_CHOICE_FLAGS: BuiltinNonInteractiveAuthChoice
   return flags;
 })();
 
-const BUILTIN_API_KEY_OPTION_BY_PROVIDER: Record<string, keyof OnboardOptions> = (() => {
-  const entries: Array<[string, keyof OnboardOptions]> = [
+const BUILTIN_API_KEY_OPTION_BY_PROVIDER: Record<string, keyof BuiltinOnboardOptions> = (() => {
+  const entries: Array<[string, keyof BuiltinOnboardOptions]> = [
     ["anthropic", "anthropicApiKey"],
     ["openai", "openaiApiKey"],
   ];
 
-  for (const spec of BUILTIN_NON_INTERACTIVE_API_KEY_SPECS) {
+  for (const spec of listBuiltinNonInteractiveApiKeySpecs()) {
     if (!spec.optionKey) {
       continue;
     }
@@ -53,7 +53,7 @@ export function listBuiltinNonInteractiveAuthChoiceFlags(): BuiltinNonInteractiv
 
 export function resolveBuiltinApiKeyOptionKeyByProvider(
   providerRaw?: string,
-): keyof OnboardOptions | undefined {
+): keyof BuiltinOnboardOptions | undefined {
   const provider = providerRaw?.trim();
   if (!provider) {
     return undefined;

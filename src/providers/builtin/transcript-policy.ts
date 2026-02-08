@@ -1,9 +1,10 @@
-import type { ToolCallIdMode } from "../../agents/tool-call-id.js";
 import { normalizeProviderId } from "../provider-id.js";
 import {
   isAntigravityClaudeModel as isBuiltinAntigravityClaudeModel,
   isGoogleModelApi,
 } from "./runtime-capabilities.js";
+
+type ToolCallIdMode = "strict" | "strict9";
 
 type TranscriptPolicyFlags = {
   isOpenAi: boolean;

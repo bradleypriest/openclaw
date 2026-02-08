@@ -12,9 +12,9 @@ import { normalizeProviderId } from "../agents/model-selection.js";
 import { resolveDefaultAgentWorkspaceDir } from "../agents/workspace.js";
 import { enablePluginInConfig } from "../plugins/enable.js";
 import { resolvePluginProviders } from "../plugins/providers.js";
+import { applyAuthProfileConfig } from "../providers/builtin/auth/profile-config.js";
 import { isRemoteEnvironment } from "./oauth-env.js";
 import { createVpsAwareOAuthHandlers } from "./oauth-flow.js";
-import { applyAuthProfileConfig } from "./onboard-auth.js";
 import { openUrl } from "./onboard-helpers.js";
 
 export type PluginProviderAuthChoiceOptions = {

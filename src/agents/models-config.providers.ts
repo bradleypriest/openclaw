@@ -3,12 +3,12 @@ import { resolveBuiltinDefaultAuthMode } from "../providers/builtin/auth/default
 import {
   BUILTIN_IMPLICIT_BEDROCK_PROVIDER_ID,
   BUILTIN_IMPLICIT_COPILOT_PROVIDER_ID,
-  buildXiaomiProvider as buildBuiltinXiaomiProvider,
   resolveBuiltinImplicitBedrockProvider,
   resolveBuiltinImplicitCopilotProvider,
   resolveBuiltinImplicitProviders,
 } from "../providers/builtin/implicit-providers.js";
 import { ensureBuiltinProviderModelNormalizersRegistered } from "../providers/builtin/model-normalizer-registry.js";
+import { buildXiaomiProviderConfig as buildBuiltinXiaomiProvider } from "../providers/builtin/xiaomi/models.js";
 import { normalizeModelIdForProvider } from "../providers/model-normalizers.js";
 import { normalizeProviderId } from "../providers/provider-id.js";
 import { ensureAuthProfileStore, listProfilesForProvider } from "./auth-profiles.js";

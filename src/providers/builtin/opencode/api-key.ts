@@ -1,10 +1,10 @@
-import type { AuthChoice } from "../../../commands/onboard-types.js";
 import type {
   BuiltinInteractiveApiKeySpec,
   BuiltinNonInteractiveApiKeySpec,
 } from "../api-key/types.js";
-import { OPENCODE_ZEN_DEFAULT_MODEL } from "../../../commands/opencode-zen-model-default.js";
+import type { AuthChoice } from "../auth/onboard-types.js";
 import { applyOpencodeZenConfig, applyOpencodeZenProviderConfig } from "./config.js";
+import { OPENCODE_ZEN_DEFAULT_MODEL_REF } from "./models.js";
 
 export const OPENCODE_INTERACTIVE_API_KEY_SPECS: BuiltinInteractiveApiKeySpec[] = [
   {
@@ -26,8 +26,8 @@ export const OPENCODE_INTERACTIVE_API_KEY_SPECS: BuiltinInteractiveApiKeySpec[] 
     },
     defaultModel: {
       kind: "standard",
-      defaultModel: OPENCODE_ZEN_DEFAULT_MODEL,
-      noteDefault: OPENCODE_ZEN_DEFAULT_MODEL,
+      defaultModel: OPENCODE_ZEN_DEFAULT_MODEL_REF,
+      noteDefault: OPENCODE_ZEN_DEFAULT_MODEL_REF,
       applyDefaultConfig: applyOpencodeZenConfig,
       applyProviderConfig: applyOpencodeZenProviderConfig,
     },

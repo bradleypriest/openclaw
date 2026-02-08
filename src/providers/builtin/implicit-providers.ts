@@ -1,17 +1,19 @@
 import type { OpenClawConfig } from "../../config/config.js";
 import type { ModelDefinitionConfig } from "../../config/types.models.js";
-import { discoverBedrockModels } from "../../agents/bedrock-discovery.js";
+import { DEFAULT_COPILOT_API_BASE_URL, resolveCopilotApiToken } from "../github-copilot-token.js";
+import { discoverBedrockModels } from "./amazon-bedrock/discovery.js";
 import {
   buildCloudflareAiGatewayModelDefinition,
   resolveCloudflareAiGatewayBaseUrl,
-} from "../../agents/cloudflare-ai-gateway.js";
+} from "./cloudflare-ai-gateway/models.js";
+import { buildMoonshotProviderConfig } from "./moonshot/models.js";
 import {
   buildSyntheticModelDefinition,
   SYNTHETIC_BASE_URL,
   SYNTHETIC_MODEL_CATALOG,
-} from "../../agents/synthetic-models.js";
-import { discoverVeniceModels, VENICE_BASE_URL } from "../../agents/venice-models.js";
-import { DEFAULT_COPILOT_API_BASE_URL, resolveCopilotApiToken } from "../github-copilot-token.js";
+} from "./synthetic/models.js";
+import { discoverVeniceModels, VENICE_BASE_URL } from "./venice/models.js";
+import { buildXiaomiProviderConfig } from "./xiaomi/models.js";
 
 type ModelsConfig = NonNullable<OpenClawConfig["models"]>;
 export type BuiltinImplicitProviderConfig = NonNullable<ModelsConfig["providers"]>[string];
@@ -46,28 +48,6 @@ const MINIMAX_API_COST = {
   output: 60,
   cacheRead: 2,
   cacheWrite: 10,
-};
-
-const XIAOMI_BASE_URL = "https://api.xiaomimimo.com/anthropic";
-export const XIAOMI_DEFAULT_MODEL_ID = "mimo-v2-flash";
-const XIAOMI_DEFAULT_CONTEXT_WINDOW = 262144;
-const XIAOMI_DEFAULT_MAX_TOKENS = 8192;
-const XIAOMI_DEFAULT_COST = {
-  input: 0,
-  output: 0,
-  cacheRead: 0,
-  cacheWrite: 0,
-};
-
-const MOONSHOT_BASE_URL = "https://api.moonshot.ai/v1";
-const MOONSHOT_DEFAULT_MODEL_ID = "kimi-k2.5";
-const MOONSHOT_DEFAULT_CONTEXT_WINDOW = 256000;
-const MOONSHOT_DEFAULT_MAX_TOKENS = 8192;
-const MOONSHOT_DEFAULT_COST = {
-  input: 0,
-  output: 0,
-  cacheRead: 0,
-  cacheWrite: 0,
 };
 
 const QWEN_PORTAL_BASE_URL = "https://portal.qwen.ai/v1";
@@ -186,24 +166,6 @@ function buildMinimaxPortalProvider(): BuiltinImplicitProviderConfig {
   };
 }
 
-function buildMoonshotProvider(): BuiltinImplicitProviderConfig {
-  return {
-    baseUrl: MOONSHOT_BASE_URL,
-    api: "openai-completions",
-    models: [
-      {
-        id: MOONSHOT_DEFAULT_MODEL_ID,
-        name: "Kimi K2.5",
-        reasoning: false,
-        input: ["text"],
-        cost: MOONSHOT_DEFAULT_COST,
-        contextWindow: MOONSHOT_DEFAULT_CONTEXT_WINDOW,
-        maxTokens: MOONSHOT_DEFAULT_MAX_TOKENS,
-      },
-    ],
-  };
-}
-
 function buildQwenPortalProvider(): BuiltinImplicitProviderConfig {
   return {
     baseUrl: QWEN_PORTAL_BASE_URL,
@@ -236,24 +198,6 @@ function buildSyntheticProvider(): BuiltinImplicitProviderConfig {
     baseUrl: SYNTHETIC_BASE_URL,
     api: "anthropic-messages",
     models: SYNTHETIC_MODEL_CATALOG.map(buildSyntheticModelDefinition),
-  };
-}
-
-export function buildXiaomiProvider(): BuiltinImplicitProviderConfig {
-  return {
-    baseUrl: XIAOMI_BASE_URL,
-    api: "anthropic-messages",
-    models: [
-      {
-        id: XIAOMI_DEFAULT_MODEL_ID,
-        name: "Xiaomi MiMo V2 Flash",
-        reasoning: false,
-        input: ["text"],
-        cost: XIAOMI_DEFAULT_COST,
-        contextWindow: XIAOMI_DEFAULT_CONTEXT_WINDOW,
-        maxTokens: XIAOMI_DEFAULT_MAX_TOKENS,
-      },
-    ],
   };
 }
 
@@ -299,7 +243,7 @@ export async function resolveBuiltinImplicitProviders(params: {
   const moonshotKey =
     params.resolveEnvApiKeyVarName("moonshot") ?? params.resolveApiKeyFromProfiles("moonshot");
   if (moonshotKey) {
-    providers.moonshot = { ...buildMoonshotProvider(), apiKey: moonshotKey };
+    providers.moonshot = { ...buildMoonshotProviderConfig(), apiKey: moonshotKey };
   }
 
   const syntheticKey =
@@ -324,7 +268,7 @@ export async function resolveBuiltinImplicitProviders(params: {
   const xiaomiKey =
     params.resolveEnvApiKeyVarName("xiaomi") ?? params.resolveApiKeyFromProfiles("xiaomi");
   if (xiaomiKey) {
-    providers.xiaomi = { ...buildXiaomiProvider(), apiKey: xiaomiKey };
+    providers.xiaomi = { ...buildXiaomiProviderConfig(), apiKey: xiaomiKey };
   }
 
   const cloudflareProfiles = params.listProfileIdsForProvider("cloudflare-ai-gateway");

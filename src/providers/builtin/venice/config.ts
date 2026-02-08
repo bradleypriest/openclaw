@@ -1,11 +1,11 @@
 import type { OpenClawConfig } from "../../../config/config.js";
+import { applyPrimaryDefaultModel } from "../default-model.js";
 import {
   buildVeniceModelDefinition,
   VENICE_BASE_URL,
   VENICE_DEFAULT_MODEL_REF,
   VENICE_MODEL_CATALOG,
-} from "../../../agents/venice-models.js";
-import { applyPrimaryDefaultModel } from "../default-model.js";
+} from "./models.js";
 
 export function applyVeniceProviderConfig(cfg: OpenClawConfig): OpenClawConfig {
   const models = { ...cfg.agents?.defaults?.models };

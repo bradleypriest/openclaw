@@ -1,12 +1,12 @@
 import type { OpenClawConfig } from "../../../config/config.js";
+import { applyPrimaryDefaultModel } from "../default-model.js";
 import {
   buildMoonshotModelDefinition,
   MOONSHOT_BASE_URL,
   MOONSHOT_CN_BASE_URL,
   MOONSHOT_DEFAULT_MODEL_ID,
   MOONSHOT_DEFAULT_MODEL_REF,
-} from "../../../commands/onboard-auth.models.js";
-import { applyPrimaryDefaultModel } from "../default-model.js";
+} from "./models.js";
 
 export function applyMoonshotProviderConfig(cfg: OpenClawConfig): OpenClawConfig {
   return applyMoonshotProviderConfigWithBaseUrl(cfg, MOONSHOT_BASE_URL);

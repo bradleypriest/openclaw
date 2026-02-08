@@ -1,10 +1,11 @@
 import { intro, note, outro, spinner } from "@clack/prompts";
+import type { OpenClawConfig } from "../config/config.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { ensureAuthProfileStore, upsertAuthProfile } from "../agents/auth-profiles.js";
-import { updateConfig } from "../commands/models/shared.js";
-import { applyAuthProfileConfig } from "../commands/onboard-auth.js";
+import { readConfigFileSnapshot, writeConfigFile } from "../config/config.js";
 import { logConfigUpdated } from "../config/logging.js";
 import { stylePromptTitle } from "../terminal/prompt-style.js";
+import { applyAuthProfileConfig } from "./builtin/auth/profile-config.js";
 
 const CLIENT_ID = "Iv1.b507a08c87ecfe98";
 const DEVICE_CODE_URL = "https://github.com/login/device/code";
@@ -29,6 +30,19 @@ type DeviceTokenResponse =
       error_description?: string;
       error_uri?: string;
     };
+
+async function updateConfig(
+  mutator: (cfg: OpenClawConfig) => OpenClawConfig,
+): Promise<OpenClawConfig> {
+  const snapshot = await readConfigFileSnapshot();
+  if (!snapshot.valid) {
+    const issues = snapshot.issues.map((issue) => `- ${issue.path}: ${issue.message}`).join("\n");
+    throw new Error(`Invalid config at ${snapshot.path}\n${issues}`);
+  }
+  const next = mutator(snapshot.config);
+  await writeConfigFile(next);
+  return next;
+}
 
 function parseJsonResponse<T>(value: unknown): T {
   if (!value || typeof value !== "object") {

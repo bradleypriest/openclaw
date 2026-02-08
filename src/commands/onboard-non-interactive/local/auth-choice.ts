@@ -9,14 +9,15 @@ import {
 } from "../../../plugins/provider-auth-manifest.js";
 import { applyAnthropicNonInteractiveAuthChoice } from "../../../providers/builtin/anthropic/non-interactive-auth.js";
 import {
-  BUILTIN_NON_INTERACTIVE_API_KEY_BY_AUTH_CHOICE,
+  resolveBuiltinNonInteractiveApiKeySpecByAuthChoice,
   resolveBuiltinApiKeyAuthChoiceByProvider,
 } from "../../../providers/builtin/api-key/non-interactive-specs.js";
 import { isBuiltinInteractiveOnlyAuthChoice } from "../../../providers/builtin/auth/choice-catalog.js";
+import { writeApiKeyCredential } from "../../../providers/builtin/auth/credentials-store.js";
+import { applyAuthProfileConfig } from "../../../providers/builtin/auth/profile-config.js";
 import { applyMiniMaxNonInteractiveAuthChoice } from "../../../providers/builtin/minimax/non-interactive-auth.js";
+import { resolveNonInteractiveApiKey } from "../../../providers/builtin/non-interactive/api-key-resolver.js";
 import { applyOpenAINonInteractiveAuthChoice } from "../../../providers/builtin/openai/non-interactive-auth.js";
-import { applyAuthProfileConfig, writeApiKeyCredential } from "../../onboard-auth.js";
-import { resolveNonInteractiveApiKey } from "../api-keys.js";
 
 function applyProviderModelConfig(cfg: OpenClawConfig, modelRef: string): OpenClawConfig {
   const models = { ...cfg.agents?.defaults?.models };
@@ -140,7 +141,7 @@ async function applyBuiltinNonInteractiveApiKeyChoice(params: {
   baseConfig: OpenClawConfig;
   nextConfig: OpenClawConfig;
 }): Promise<OpenClawConfig | null | undefined> {
-  const spec = BUILTIN_NON_INTERACTIVE_API_KEY_BY_AUTH_CHOICE.get(params.authChoice);
+  const spec = resolveBuiltinNonInteractiveApiKeySpecByAuthChoice(params.authChoice);
   if (!spec) {
     return undefined;
   }
@@ -150,9 +151,7 @@ async function applyBuiltinNonInteractiveApiKeyChoice(params: {
     return null;
   }
 
-  const optionValue = spec.optionKey
-    ? (params.opts[spec.optionKey] as string | undefined)
-    : undefined;
+  const optionValue = spec.optionKey ? params.opts[spec.optionKey] : undefined;
 
   const resolved = await resolveNonInteractiveApiKey({
     provider: spec.providerId,

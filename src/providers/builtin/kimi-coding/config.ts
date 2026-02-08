@@ -1,6 +1,6 @@
 import type { OpenClawConfig } from "../../../config/config.js";
-import { KIMI_CODING_MODEL_REF } from "../../../commands/onboard-auth.models.js";
 import { applyPrimaryDefaultModel } from "../default-model.js";
+import { KIMI_CODING_MODEL_REF } from "./models.js";
 
 export function applyKimiCodeProviderConfig(cfg: OpenClawConfig): OpenClawConfig {
   const models = { ...cfg.agents?.defaults?.models };

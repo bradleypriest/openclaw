@@ -1,4 +1,5 @@
 import type { OpenClawConfig } from "../../../config/config.js";
+import { applyPrimaryDefaultModel } from "../default-model.js";
 import {
   buildMinimaxApiModelDefinition,
   buildMinimaxModelDefinition,
@@ -10,8 +11,7 @@ import {
   MINIMAX_HOSTED_MODEL_ID,
   MINIMAX_HOSTED_MODEL_REF,
   MINIMAX_LM_STUDIO_COST,
-} from "../../../commands/onboard-auth.models.js";
-import { applyPrimaryDefaultModel } from "../default-model.js";
+} from "./models.js";
 
 export function applyMinimaxProviderConfig(cfg: OpenClawConfig): OpenClawConfig {
   const models = { ...cfg.agents?.defaults?.models };

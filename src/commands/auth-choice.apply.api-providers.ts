@@ -12,7 +12,9 @@ import {
   findDeclarativeProviderAuthByChoice,
   findDeclarativeProviderAuthByTokenProvider,
 } from "../plugins/provider-auth-manifest.js";
-import { BUILTIN_INTERACTIVE_API_KEY_BY_AUTH_CHOICE } from "../providers/builtin/api-key/interactive-specs.js";
+import { resolveBuiltinInteractiveApiKeySpecByAuthChoice } from "../providers/builtin/api-key/interactive-specs.js";
+import { writeApiKeyCredential } from "../providers/builtin/auth/credentials-store.js";
+import { applyAuthProfileConfig } from "../providers/builtin/auth/profile-config.js";
 import { resolveBuiltinAuthChoiceByTokenProvider } from "../providers/builtin/auth/token-provider-auth-choice.js";
 import {
   formatApiKeyPreview,
@@ -20,7 +22,6 @@ import {
   validateApiKeyInput,
 } from "./auth-choice.api-key.js";
 import { applyDefaultModelChoice } from "./auth-choice.default-model.js";
-import { applyAuthProfileConfig, writeApiKeyCredential } from "./onboard-auth.js";
 
 function applyProviderModelConfig(cfg: OpenClawConfig, modelRef: string): OpenClawConfig {
   const models = { ...cfg.agents?.defaults?.models };
@@ -174,7 +175,7 @@ async function applyBuiltinDeclarativeApiProvider(params: {
   noteAgentModel: (model: string) => Promise<void>;
   authChoice: string;
 }): Promise<{ config: OpenClawConfig; agentModelOverride?: string } | null> {
-  const spec = BUILTIN_INTERACTIVE_API_KEY_BY_AUTH_CHOICE.get(params.authChoice);
+  const spec = resolveBuiltinInteractiveApiKeySpecByAuthChoice(params.authChoice);
   if (!spec) {
     return null;
   }

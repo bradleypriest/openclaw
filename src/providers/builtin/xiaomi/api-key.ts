@@ -1,10 +1,13 @@
-import type { AuthChoice } from "../../../commands/onboard-types.js";
 import type {
   BuiltinInteractiveApiKeySpec,
   BuiltinNonInteractiveApiKeySpec,
 } from "../api-key/types.js";
-import { XIAOMI_DEFAULT_MODEL_REF } from "../../../commands/onboard-auth.credentials.js";
-import { applyXiaomiConfig, applyXiaomiProviderConfig } from "./config.js";
+import type { AuthChoice } from "../auth/onboard-types.js";
+import {
+  applyXiaomiConfig,
+  applyXiaomiProviderConfig,
+  XIAOMI_DEFAULT_MODEL_REF,
+} from "./config.js";
 
 export const XIAOMI_INTERACTIVE_API_KEY_SPECS: BuiltinInteractiveApiKeySpec[] = [
   {

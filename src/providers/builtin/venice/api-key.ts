@@ -1,10 +1,10 @@
-import type { AuthChoice } from "../../../commands/onboard-types.js";
 import type {
   BuiltinInteractiveApiKeySpec,
   BuiltinNonInteractiveApiKeySpec,
 } from "../api-key/types.js";
-import { VENICE_DEFAULT_MODEL_REF } from "../../../agents/venice-models.js";
+import type { AuthChoice } from "../auth/onboard-types.js";
 import { applyVeniceConfig, applyVeniceProviderConfig } from "./config.js";
+import { VENICE_DEFAULT_MODEL_REF } from "./models.js";
 
 export const VENICE_INTERACTIVE_API_KEY_SPECS: BuiltinInteractiveApiKeySpec[] = [
   {

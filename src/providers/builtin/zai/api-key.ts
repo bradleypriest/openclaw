@@ -1,14 +1,14 @@
-import type { AuthChoice } from "../../../commands/onboard-types.js";
 import type { OpenClawConfig } from "../../../config/config.js";
 import type {
   BuiltinInteractiveApiKeySpec,
   BuiltinNonInteractiveApiKeySpec,
   BuiltinProviderContext,
 } from "../api-key/types.js";
-import { ZAI_DEFAULT_MODEL_REF } from "../../../commands/onboard-auth.credentials.js";
+import type { AuthChoice } from "../auth/onboard-types.js";
 import { applyProviderSetupHook } from "../../setup-hooks.js";
 import { ensureBuiltinProviderSetupHooksRegistered } from "../setup-hooks.js";
 import { applyZaiConfig } from "./config.js";
+import { ZAI_DEFAULT_MODEL_REF } from "./constants.js";
 import { ZAI_PROVIDER_CONFIG_HOOK_ID } from "./setup.js";
 
 function applyBuiltinSetupHookById(
