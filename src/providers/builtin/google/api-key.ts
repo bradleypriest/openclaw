@@ -3,10 +3,8 @@ import type {
   BuiltinInteractiveApiKeySpec,
   BuiltinNonInteractiveApiKeySpec,
 } from "../api-key/types.js";
-import {
-  applyGoogleGeminiModelDefault,
-  GOOGLE_GEMINI_DEFAULT_MODEL,
-} from "../../../commands/google-gemini-model-default.js";
+import { GOOGLE_GEMINI_DEFAULT_MODEL } from "../../../commands/google-gemini-model-default.js";
+import { applyGoogleConfig, applyGoogleProviderConfig } from "./config.js";
 
 export const GOOGLE_INTERACTIVE_API_KEY_SPECS: BuiltinInteractiveApiKeySpec[] = [
   {
@@ -18,8 +16,11 @@ export const GOOGLE_INTERACTIVE_API_KEY_SPECS: BuiltinInteractiveApiKeySpec[] = 
     keyPrompt: "Enter Gemini API key",
     optionKey: "geminiApiKey",
     defaultModel: {
-      kind: "gemini",
+      kind: "standard",
       defaultModel: GOOGLE_GEMINI_DEFAULT_MODEL,
+      noteDefault: GOOGLE_GEMINI_DEFAULT_MODEL,
+      applyDefaultConfig: applyGoogleConfig,
+      applyProviderConfig: applyGoogleProviderConfig,
     },
   },
 ];
@@ -32,7 +33,7 @@ export const GOOGLE_NON_INTERACTIVE_API_KEY_SPECS: BuiltinNonInteractiveApiKeySp
     optionKey: "geminiApiKey",
     flagName: "--gemini-api-key",
     envVar: "GEMINI_API_KEY",
-    applyConfig: (config) => applyGoogleGeminiModelDefault(config).next,
+    applyConfig: (config) => applyGoogleConfig(config),
   },
 ];
 

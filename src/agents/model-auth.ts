@@ -5,6 +5,11 @@ import type { ModelProviderAuthMode, ModelProviderConfig } from "../config/types
 import { formatCliCommand } from "../cli/command-format.js";
 import { getShellEnvAppliedKeys } from "../infra/shell-env.js";
 import { resolveProviderEnvApiKey } from "../providers/auth-env-vars.js";
+import {
+  isAmazonBedrockProvider,
+  resolveAmazonBedrockAwsSdkAuthInfo,
+  resolveAwsSdkEnvVarName as resolveAmazonBedrockAwsSdkEnvVarName,
+} from "../providers/builtin/amazon-bedrock/auth.js";
 import { ensureBuiltinProviderEnvApiKeyResolversRegistered } from "../providers/builtin/env-resolvers.js";
 import {
   type AuthProfileStore,
@@ -17,11 +22,6 @@ import {
 import { normalizeProviderId } from "./model-selection.js";
 
 export { ensureAuthProfileStore, resolveAuthProfileOrder } from "./auth-profiles.js";
-
-const AWS_BEARER_ENV = "AWS_BEARER_TOKEN_BEDROCK";
-const AWS_ACCESS_KEY_ENV = "AWS_ACCESS_KEY_ID";
-const AWS_SECRET_KEY_ENV = "AWS_SECRET_ACCESS_KEY";
-const AWS_PROFILE_ENV = "AWS_PROFILE";
 
 function resolveProviderConfig(
   cfg: OpenClawConfig | undefined,
@@ -66,62 +66,8 @@ function resolveProviderAuthOverride(
   return undefined;
 }
 
-function resolveEnvSourceLabel(params: {
-  applied: Set<string>;
-  envVars: string[];
-  label: string;
-}): string {
-  const shellApplied = params.envVars.some((envVar) => params.applied.has(envVar));
-  const prefix = shellApplied ? "shell env: " : "env: ";
-  return `${prefix}${params.label}`;
-}
-
 export function resolveAwsSdkEnvVarName(env: NodeJS.ProcessEnv = process.env): string | undefined {
-  if (env[AWS_BEARER_ENV]?.trim()) {
-    return AWS_BEARER_ENV;
-  }
-  if (env[AWS_ACCESS_KEY_ENV]?.trim() && env[AWS_SECRET_KEY_ENV]?.trim()) {
-    return AWS_ACCESS_KEY_ENV;
-  }
-  if (env[AWS_PROFILE_ENV]?.trim()) {
-    return AWS_PROFILE_ENV;
-  }
-  return undefined;
-}
-
-function resolveAwsSdkAuthInfo(): { mode: "aws-sdk"; source: string } {
-  const applied = new Set(getShellEnvAppliedKeys());
-  if (process.env[AWS_BEARER_ENV]?.trim()) {
-    return {
-      mode: "aws-sdk",
-      source: resolveEnvSourceLabel({
-        applied,
-        envVars: [AWS_BEARER_ENV],
-        label: AWS_BEARER_ENV,
-      }),
-    };
-  }
-  if (process.env[AWS_ACCESS_KEY_ENV]?.trim() && process.env[AWS_SECRET_KEY_ENV]?.trim()) {
-    return {
-      mode: "aws-sdk",
-      source: resolveEnvSourceLabel({
-        applied,
-        envVars: [AWS_ACCESS_KEY_ENV, AWS_SECRET_KEY_ENV],
-        label: `${AWS_ACCESS_KEY_ENV} + ${AWS_SECRET_KEY_ENV}`,
-      }),
-    };
-  }
-  if (process.env[AWS_PROFILE_ENV]?.trim()) {
-    return {
-      mode: "aws-sdk",
-      source: resolveEnvSourceLabel({
-        applied,
-        envVars: [AWS_PROFILE_ENV],
-        label: AWS_PROFILE_ENV,
-      }),
-    };
-  }
-  return { mode: "aws-sdk", source: "aws-sdk default chain" };
+  return resolveAmazonBedrockAwsSdkEnvVarName(env);
 }
 
 export type ResolvedProviderAuth = {
@@ -163,7 +109,7 @@ export async function resolveApiKeyForProvider(params: {
 
   const authOverride = resolveProviderAuthOverride(cfg, provider);
   if (authOverride === "aws-sdk") {
-    return resolveAwsSdkAuthInfo();
+    return resolveAmazonBedrockAwsSdkAuthInfo();
   }
 
   const order = resolveAuthProfileOrder({
@@ -206,9 +152,8 @@ export async function resolveApiKeyForProvider(params: {
     return { apiKey: customKey, source: "models.json", mode: "api-key" };
   }
 
-  const normalized = normalizeProviderId(provider);
-  if (authOverride === undefined && normalized === "amazon-bedrock") {
-    return resolveAwsSdkAuthInfo();
+  if (authOverride === undefined && isAmazonBedrockProvider(provider)) {
+    return resolveAmazonBedrockAwsSdkAuthInfo();
   }
 
   if (provider === "openai") {
@@ -293,7 +238,7 @@ export function resolveModelAuthMode(
     }
   }
 
-  if (authOverride === undefined && normalizeProviderId(resolved) === "amazon-bedrock") {
+  if (authOverride === undefined && isAmazonBedrockProvider(resolved)) {
     return "aws-sdk";
   }
 

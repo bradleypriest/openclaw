@@ -8,24 +8,13 @@ export type BuiltinProviderContext = {
   gatewayId?: string;
 };
 
-export type BuiltinProviderDefaultModel =
-  | {
-      kind: "standard";
-      defaultModel: string;
-      noteDefault?: string;
-      applyDefaultConfig: (
-        config: OpenClawConfig,
-        context?: BuiltinProviderContext,
-      ) => OpenClawConfig;
-      applyProviderConfig: (
-        config: OpenClawConfig,
-        context?: BuiltinProviderContext,
-      ) => OpenClawConfig;
-    }
-  | {
-      kind: "gemini";
-      defaultModel: string;
-    };
+export type BuiltinProviderDefaultModel = {
+  kind: "standard";
+  defaultModel: string;
+  noteDefault?: string;
+  applyDefaultConfig: (config: OpenClawConfig, context?: BuiltinProviderContext) => OpenClawConfig;
+  applyProviderConfig: (config: OpenClawConfig, context?: BuiltinProviderContext) => OpenClawConfig;
+};
 
 export type BuiltinInteractiveApiKeySpec = {
   authChoice: string;

@@ -12,17 +12,14 @@ import {
   findDeclarativeProviderAuthByChoice,
   findDeclarativeProviderAuthByTokenProvider,
 } from "../plugins/provider-auth-manifest.js";
-import {
-  BUILTIN_INTERACTIVE_API_KEY_BY_AUTH_CHOICE,
-  BUILTIN_TOKEN_PROVIDER_TO_AUTH_CHOICE,
-} from "../providers/builtin/api-key/interactive-specs.js";
+import { BUILTIN_INTERACTIVE_API_KEY_BY_AUTH_CHOICE } from "../providers/builtin/api-key/interactive-specs.js";
+import { resolveBuiltinAuthChoiceByTokenProvider } from "../providers/builtin/auth/token-provider-auth-choice.js";
 import {
   formatApiKeyPreview,
   normalizeApiKeyInput,
   validateApiKeyInput,
 } from "./auth-choice.api-key.js";
 import { applyDefaultModelChoice } from "./auth-choice.default-model.js";
-import { applyGoogleGeminiModelDefault } from "./google-gemini-model-default.js";
 import { applyAuthProfileConfig, writeApiKeyCredential } from "./onboard-auth.js";
 
 function applyProviderModelConfig(cfg: OpenClawConfig, modelRef: string): OpenClawConfig {
@@ -273,20 +270,6 @@ async function applyBuiltinDeclarativeApiProvider(params: {
     });
     nextConfig = applied.config;
     agentModelOverride = applied.agentModelOverride ?? agentModelOverride;
-  } else if (spec.defaultModel?.kind === "gemini") {
-    if (params.params.setDefaultModel) {
-      const applied = applyGoogleGeminiModelDefault(nextConfig);
-      nextConfig = applied.next;
-      if (applied.changed) {
-        await params.params.prompter.note(
-          `Default model set to ${spec.defaultModel.defaultModel}`,
-          "Model configured",
-        );
-      }
-    } else {
-      agentModelOverride = spec.defaultModel.defaultModel;
-      await params.noteAgentModel(spec.defaultModel.defaultModel);
-    }
   }
 
   return { config: nextConfig, agentModelOverride };
@@ -309,17 +292,15 @@ export async function applyAuthChoiceApiProviders(
   let authChoice = params.authChoice;
   if (authChoice === "apiKey" && params.opts?.tokenProvider) {
     const tokenProvider = normalizeProviderId(params.opts.tokenProvider);
-    if (tokenProvider !== "anthropic" && tokenProvider !== "openai") {
-      const mappedAuthChoice = BUILTIN_TOKEN_PROVIDER_TO_AUTH_CHOICE.get(tokenProvider);
-      if (mappedAuthChoice) {
-        authChoice = mappedAuthChoice as typeof authChoice;
-      } else {
-        const declarative = findDeclarativeProviderAuthByTokenProvider(tokenProvider, {
-          config: nextConfig,
-        });
-        if (declarative) {
-          authChoice = declarative.authChoice as typeof authChoice;
-        }
+    const mappedAuthChoice = resolveBuiltinAuthChoiceByTokenProvider(tokenProvider);
+    if (mappedAuthChoice) {
+      authChoice = mappedAuthChoice as typeof authChoice;
+    } else {
+      const declarative = findDeclarativeProviderAuthByTokenProvider(tokenProvider, {
+        config: nextConfig,
+      });
+      if (declarative) {
+        authChoice = declarative.authChoice as typeof authChoice;
       }
     }
   }
