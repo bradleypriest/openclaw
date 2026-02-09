@@ -18,7 +18,8 @@ export type BuiltinProviderTag =
   | "google-provider"
   | "google-antigravity"
   | "requires-oauth-project-id"
-  | "supports-cache-retention";
+  | "supports-cache-retention"
+  | "sanitize-gemini-thought-signatures";
 
 export type BuiltinProviderDescriptor = {
   providerId: string;

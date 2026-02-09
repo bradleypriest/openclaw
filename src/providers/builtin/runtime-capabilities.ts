@@ -58,6 +58,10 @@ export function supportsCacheRetentionStreamParam(provider?: string): boolean {
   return hasBuiltinProviderTag(provider, "supports-cache-retention");
 }
 
+export function shouldSanitizeGeminiThoughtSignatures(provider?: string): boolean {
+  return hasBuiltinProviderTag(provider, "sanitize-gemini-thought-signatures");
+}
+
 export function isCacheTtlEligibleProvider(params: { provider: string; modelId: string }): boolean {
   const normalizedModelId = params.modelId.toLowerCase();
   if (isAnthropicProvider(params.provider)) {

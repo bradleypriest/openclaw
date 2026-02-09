@@ -1,9 +1,10 @@
-import { normalizeProviderId } from "../provider-id.js";
+import { isMistralTranscriptModel } from "./mistral/transcript-policy.js";
 import {
   isAntigravityClaudeModel as isBuiltinAntigravityClaudeModel,
   isAnthropicProvider,
   isGoogleModelApi,
   isOpenAiFamilyProvider,
+  shouldSanitizeGeminiThoughtSignatures,
 } from "./runtime-capabilities.js";
 
 type ToolCallIdMode = "strict" | "strict9";
@@ -26,15 +27,6 @@ type TranscriptPolicyFlags = {
   preserveSignatures: boolean;
 };
 
-const MISTRAL_MODEL_HINTS = [
-  "mistral",
-  "mixtral",
-  "codestral",
-  "pixtral",
-  "devstral",
-  "ministral",
-  "mistralai",
-];
 const OPENAI_MODEL_APIS = new Set([
   "openai",
   "openai-completions",
@@ -60,32 +52,19 @@ function isAnthropicApi(modelApi?: string | null, provider?: string | null): boo
   return isAnthropicProvider(provider ?? undefined);
 }
 
-function isMistralModel(params: { provider?: string | null; modelId?: string | null }): boolean {
-  const provider = normalizeProviderId(params.provider ?? "");
-  if (provider === "mistral") {
-    return true;
-  }
-  const modelId = (params.modelId ?? "").toLowerCase();
-  if (!modelId) {
-    return false;
-  }
-  return MISTRAL_MODEL_HINTS.some((hint) => modelId.includes(hint));
-}
-
 export function resolveBuiltinTranscriptPolicyFlags(params: {
   modelApi?: string | null;
   provider?: string | null;
   modelId?: string | null;
 }): TranscriptPolicyFlags {
-  const provider = normalizeProviderId(params.provider ?? "");
+  const provider = params.provider ?? "";
   const modelId = params.modelId ?? "";
   const isGoogle = isGoogleModelApi(params.modelApi);
   const isAnthropic = isAnthropicApi(params.modelApi, provider);
   const isOpenAi = isOpenAiProvider(provider) || (!provider && isOpenAiApi(params.modelApi));
-  const isMistral = isMistralModel({ provider, modelId });
+  const isMistral = isMistralTranscriptModel({ provider, modelId });
   const isOpenRouterGemini =
-    (provider === "openrouter" || provider === "opencode") &&
-    modelId.toLowerCase().includes("gemini");
+    shouldSanitizeGeminiThoughtSignatures(provider) && modelId.toLowerCase().includes("gemini");
   const isAntigravityClaudeModel = isBuiltinAntigravityClaudeModel({
     api: params.modelApi,
     provider,
