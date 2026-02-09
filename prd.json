@@ -1,0 +1,72 @@
+{
+  "project": "Provider Registry",
+  "branchName": "spike/provider-registry",
+  "userStories": [
+    {
+      "id": "registry-core",
+      "title": "Add ProviderRegistry core API",
+      "priority": 1,
+      "passes": false,
+      "acceptanceCriteria": [
+        "ProviderRegistry exposes registerProvider/resolveProvider/listProviders",
+        "Duplicate ids emit diagnostics and ignore later registration",
+        "Unit tests cover registry core"
+      ]
+    },
+    {
+      "id": "configpatch-guard",
+      "title": "Restrict provider configPatch surface",
+      "priority": 2,
+      "passes": false,
+      "acceptanceCriteria": [
+        "Only models.providers.<id>, models.mode, agents.defaults.models are allowed",
+        "Invalid keys emit diagnostics",
+        "Tests cover allowed/disallowed patches"
+      ]
+    },
+    {
+      "id": "plugin-adapter",
+      "title": "Adapter for plugin provider API",
+      "priority": 3,
+      "passes": false,
+      "acceptanceCriteria": [
+        "Existing plugin providers register without changes",
+        "defaultModel + configPatch still work",
+        "Compatibility tests green"
+      ]
+    },
+    {
+      "id": "derived-views",
+      "title": "Expose derived provider views for internal callers",
+      "priority": 4,
+      "passes": false,
+      "acceptanceCriteria": [
+        "Auth choice catalog and env-var candidates read from registry",
+        "Legacy profile rules and advisories read from registry",
+        "No behavior regressions in onboarding tests"
+      ]
+    },
+    {
+      "id": "core-migration-batch1",
+      "title": "Migrate OpenAI + Anthropic to ProviderRegistry",
+      "priority": 5,
+      "passes": false,
+      "acceptanceCriteria": [
+        "Providers register via configBlock",
+        "Onboarding/auth tests green",
+        "No behavior regression"
+      ]
+    },
+    {
+      "id": "coverage-tests",
+      "title": "Add registry coverage and diagnostics tests",
+      "priority": 6,
+      "passes": false,
+      "acceptanceCriteria": [
+        "Coverage test ensures each core provider registers once",
+        "Diagnostics tests cover duplicates and invalid aliases",
+        "All tests green"
+      ]
+    }
+  ]
+}
