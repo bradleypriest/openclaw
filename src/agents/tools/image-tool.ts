@@ -14,7 +14,8 @@ import { resolveUserPath } from "../../utils.js";
 import { loadWebMedia } from "../../web/media.js";
 import { ensureAuthProfileStore, listProfilesForProvider } from "../auth-profiles.js";
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../defaults.js";
-import { minimaxUnderstandImage } from "../minimax-vlm.js";
+import { ensureProviderImageModelExecutionHandlersRegistered } from "../image-model-execution-registry-bootstrap.js";
+import { resolveProviderImageModelExecutionHandler } from "../image-model-execution-registry-core.js";
 import { getApiKeyForModel, requireApiKey, resolveEnvApiKey } from "../model-auth.js";
 import { runWithImageModelFallback } from "../model-fallback.js";
 import { resolveConfiguredModelRef } from "../model-selection.js";
@@ -266,12 +267,14 @@ async function runImagePrompt(params: {
       authStorage.setRuntimeApiKey(model.provider, apiKey);
       const imageDataUrl = `data:${params.mimeType};base64,${params.base64}`;
 
-      if (model.provider === "minimax") {
-        const text = await minimaxUnderstandImage({
+      ensureProviderImageModelExecutionHandlersRegistered();
+      const providerExecutionHandler = resolveProviderImageModelExecutionHandler(model.provider);
+      if (providerExecutionHandler) {
+        const text = await providerExecutionHandler({
+          model,
           apiKey,
           prompt: params.prompt,
           imageDataUrl,
-          modelBaseUrl: model.baseUrl,
         });
         return { text, provider: model.provider, model: model.id };
       }
