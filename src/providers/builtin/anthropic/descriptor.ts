@@ -7,7 +7,7 @@ export const ANTHROPIC_PROVIDER_DESCRIPTOR = defineBuiltinProviderDescriptor({
     envVarCandidates: ["ANTHROPIC_OAUTH_TOKEN", "ANTHROPIC_API_KEY"],
   },
   runtime: {
-    tags: ["anthropic", "supports-cache-retention"],
+    tags: ["anthropic", "supports-cache-retention", "cache-ttl-eligible"],
   },
   setup: {
     token: {

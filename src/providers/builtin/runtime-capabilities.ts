@@ -1,3 +1,4 @@
+import { isCacheTtlEligibleViaProviderHook } from "./runtime/cache-ttl-eligibility.js";
 import { hasBuiltinProviderTag } from "./runtime/provider-tags.js";
 
 const GOOGLE_MODEL_APIS = new Set([
@@ -63,12 +64,14 @@ export function shouldSanitizeGeminiThoughtSignatures(provider?: string): boolea
 }
 
 export function isCacheTtlEligibleProvider(params: { provider: string; modelId: string }): boolean {
-  const normalizedModelId = params.modelId.toLowerCase();
-  if (isAnthropicProvider(params.provider)) {
+  if (hasBuiltinProviderTag(params.provider, "cache-ttl-eligible")) {
     return true;
   }
-  if (isOpenRouterProvider(params.provider) && normalizedModelId.startsWith("anthropic/")) {
-    return true;
+  if (!hasBuiltinProviderTag(params.provider, "cache-ttl-via-hook")) {
+    return false;
   }
-  return false;
+  return isCacheTtlEligibleViaProviderHook({
+    provider: params.provider,
+    modelId: params.modelId,
+  });
 }
