@@ -4,6 +4,8 @@ import type { OpenClawConfig, MemorySearchConfig } from "../config/config.js";
 import { resolveStateDir } from "../config/paths.js";
 import { clampInt, clampNumber, resolveUserPath } from "../utils.js";
 import { resolveAgentConfig } from "./agent-scope.js";
+import { ensureMemorySearchProviderBehaviorsRegistered } from "./memory-search-provider-registry-bootstrap.js";
+import { resolveMemorySearchProviderBehavior } from "./memory-search-provider-registry-core.js";
 
 export type ResolvedMemorySearchConfig = {
   enabled: boolean;
@@ -70,9 +72,6 @@ export type ResolvedMemorySearchConfig = {
   };
 };
 
-const DEFAULT_OPENAI_MODEL = "text-embedding-3-small";
-const DEFAULT_GEMINI_MODEL = "gemini-embedding-001";
-const DEFAULT_VOYAGE_MODEL = "voyage-4-large";
 const DEFAULT_CHUNK_TOKENS = 400;
 const DEFAULT_CHUNK_OVERLAP = 80;
 const DEFAULT_WATCH_DEBOUNCE_MS = 1500;
@@ -126,6 +125,8 @@ function mergeConfig(
   const sessionMemory =
     overrides?.experimental?.sessionMemory ?? defaults?.experimental?.sessionMemory ?? false;
   const provider = overrides?.provider ?? defaults?.provider ?? "auto";
+  ensureMemorySearchProviderBehaviorsRegistered();
+  const providerBehavior = resolveMemorySearchProviderBehavior(provider);
   const defaultRemote = defaults?.remote;
   const overrideRemote = overrides?.remote;
   const hasRemoteConfig = Boolean(
@@ -136,12 +137,7 @@ function mergeConfig(
     defaultRemote?.apiKey ||
     defaultRemote?.headers,
   );
-  const includeRemote =
-    hasRemoteConfig ||
-    provider === "openai" ||
-    provider === "gemini" ||
-    provider === "voyage" ||
-    provider === "auto";
+  const includeRemote = hasRemoteConfig || providerBehavior.includeRemoteByDefault;
   const batch = {
     enabled: overrideRemote?.batch?.enabled ?? defaultRemote?.batch?.enabled ?? true,
     wait: overrideRemote?.batch?.wait ?? defaultRemote?.batch?.wait ?? true,
@@ -163,14 +159,7 @@ function mergeConfig(
       }
     : undefined;
   const fallback = overrides?.fallback ?? defaults?.fallback ?? "none";
-  const modelDefault =
-    provider === "gemini"
-      ? DEFAULT_GEMINI_MODEL
-      : provider === "openai"
-        ? DEFAULT_OPENAI_MODEL
-        : provider === "voyage"
-          ? DEFAULT_VOYAGE_MODEL
-          : undefined;
+  const modelDefault = providerBehavior.defaultModel;
   const model = overrides?.model ?? defaults?.model ?? modelDefault ?? "";
   const local = {
     modelPath: overrides?.local?.modelPath ?? defaults?.local?.modelPath,
