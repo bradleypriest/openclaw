@@ -4,16 +4,17 @@ import {
   listBuiltinProviderEnvVarCandidateProviders,
   resolveBuiltinProviderEnvVarCandidates,
 } from "./builtin/auth/env-var-candidates.js";
+import { ensureProviderEnvVarCandidatesRegistered } from "./env-var-candidates-registry.js";
+import {
+  listRegisteredProviderEnvVarCandidateProviders,
+  resolveRegisteredProviderEnvVarCandidates,
+} from "./provider-env-var-candidates.js";
 import { normalizeProviderId } from "./provider-id.js";
 
 export type ProviderEnvApiKey = { apiKey: string; source: string };
 export type ProviderEnvApiKeyResolver = () => ProviderEnvApiKey | null;
 
 const providerEnvApiKeyResolvers = new Map<string, ProviderEnvApiKeyResolver>();
-
-const LEGACY_PROVIDER_ENV_VAR_CANDIDATES: Record<string, string[]> = {
-  voyage: ["VOYAGE_API_KEY"],
-};
 
 export function resolveProviderEnvVarCandidates(
   provider: string,
@@ -23,9 +24,11 @@ export function resolveProviderEnvVarCandidates(
     includeDeclarative?: boolean;
   } = {},
 ): string[] {
+  ensureProviderEnvVarCandidatesRegistered();
   const normalized = normalizeProviderId(provider);
   const base = resolveBuiltinProviderEnvVarCandidates(normalized);
-  const candidates = [...base, ...(LEGACY_PROVIDER_ENV_VAR_CANDIDATES[normalized] ?? [])];
+  const registered = resolveRegisteredProviderEnvVarCandidates(normalized);
+  const candidates = [...base, ...registered];
 
   if (params.includeDeclarative !== false) {
     const declarative = findDeclarativeProviderAuthByProvider(normalized, {
@@ -59,10 +62,11 @@ export function listProviderEnvApiKeyResolverProviders(): string[] {
 }
 
 export function listProviderEnvVarCandidateProviders(): string[] {
+  ensureProviderEnvVarCandidatesRegistered();
   return [
     ...new Set([
       ...listBuiltinProviderEnvVarCandidateProviders(),
-      ...Object.keys(LEGACY_PROVIDER_ENV_VAR_CANDIDATES),
+      ...listRegisteredProviderEnvVarCandidateProviders(),
     ]),
   ];
 }
