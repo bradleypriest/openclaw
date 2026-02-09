@@ -1,4 +1,8 @@
-import type { BuiltinImplicitProviderConfig } from "../implicit-types.js";
+import type {
+  BuiltinImplicitProviderConfig,
+  BuiltinImplicitProviderResolverContext,
+  BuiltinImplicitProviderResolverResult,
+} from "../implicit-types.js";
 
 export const QIANFAN_BASE_URL = "https://qianfan.baidubce.com/v2";
 export const QIANFAN_DEFAULT_MODEL_ID = "deepseek-v3.2";
@@ -36,4 +40,15 @@ export function buildQianfanProviderConfig(): BuiltinImplicitProviderConfig {
       },
     ],
   };
+}
+
+export function resolveQianfanImplicitProviders(
+  params: BuiltinImplicitProviderResolverContext,
+): BuiltinImplicitProviderResolverResult {
+  const qianfanKey =
+    params.resolveEnvApiKeyVarName("qianfan") ?? params.resolveApiKeyFromProfiles("qianfan");
+  if (!qianfanKey) {
+    return {};
+  }
+  return { qianfan: { ...buildQianfanProviderConfig(), apiKey: qianfanKey } };
 }

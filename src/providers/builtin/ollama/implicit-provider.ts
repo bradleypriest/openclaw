@@ -1,5 +1,9 @@
 import type { ModelDefinitionConfig } from "../../../config/types.models.js";
-import type { BuiltinImplicitProviderConfig } from "../implicit-types.js";
+import type {
+  BuiltinImplicitProviderConfig,
+  BuiltinImplicitProviderResolverContext,
+  BuiltinImplicitProviderResolverResult,
+} from "../implicit-types.js";
 
 const OLLAMA_IMPLICIT_BASE_URL = "http://127.0.0.1:11434/v1";
 const OLLAMA_IMPLICIT_API_BASE_URL = "http://127.0.0.1:11434";
@@ -67,4 +71,15 @@ export async function buildOllamaImplicitProviderConfig(): Promise<BuiltinImplic
     api: "openai-completions",
     models,
   };
+}
+
+export async function resolveOllamaImplicitProviders(
+  params: BuiltinImplicitProviderResolverContext,
+): Promise<BuiltinImplicitProviderResolverResult> {
+  const ollamaKey =
+    params.resolveEnvApiKeyVarName("ollama") ?? params.resolveApiKeyFromProfiles("ollama");
+  if (!ollamaKey) {
+    return {};
+  }
+  return { ollama: { ...(await buildOllamaImplicitProviderConfig()), apiKey: ollamaKey } };
 }

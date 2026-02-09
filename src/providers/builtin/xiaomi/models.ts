@@ -1,4 +1,8 @@
 import type { ModelProviderConfig } from "../../../config/types.models.js";
+import type {
+  BuiltinImplicitProviderResolverContext,
+  BuiltinImplicitProviderResolverResult,
+} from "../implicit-types.js";
 
 export const XIAOMI_BASE_URL = "https://api.xiaomimimo.com/anthropic";
 export const XIAOMI_DEFAULT_MODEL_ID = "mimo-v2-flash";
@@ -27,4 +31,15 @@ export function buildXiaomiProviderConfig(): ModelProviderConfig {
       },
     ],
   };
+}
+
+export function resolveXiaomiImplicitProviders(
+  params: BuiltinImplicitProviderResolverContext,
+): BuiltinImplicitProviderResolverResult {
+  const xiaomiKey =
+    params.resolveEnvApiKeyVarName("xiaomi") ?? params.resolveApiKeyFromProfiles("xiaomi");
+  if (!xiaomiKey) {
+    return {};
+  }
+  return { xiaomi: { ...buildXiaomiProviderConfig(), apiKey: xiaomiKey } };
 }

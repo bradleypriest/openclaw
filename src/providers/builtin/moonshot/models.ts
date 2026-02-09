@@ -1,4 +1,8 @@
 import type { ModelDefinitionConfig, ModelProviderConfig } from "../../../config/types.js";
+import type {
+  BuiltinImplicitProviderResolverContext,
+  BuiltinImplicitProviderResolverResult,
+} from "../implicit-types.js";
 
 export const MOONSHOT_BASE_URL = "https://api.moonshot.ai/v1";
 export const MOONSHOT_CN_BASE_URL = "https://api.moonshot.cn/v1";
@@ -31,4 +35,15 @@ export function buildMoonshotProviderConfig(): ModelProviderConfig {
     api: "openai-completions",
     models: [buildMoonshotModelDefinition()],
   };
+}
+
+export function resolveMoonshotImplicitProviders(
+  params: BuiltinImplicitProviderResolverContext,
+): BuiltinImplicitProviderResolverResult {
+  const moonshotKey =
+    params.resolveEnvApiKeyVarName("moonshot") ?? params.resolveApiKeyFromProfiles("moonshot");
+  if (!moonshotKey) {
+    return {};
+  }
+  return { moonshot: { ...buildMoonshotProviderConfig(), apiKey: moonshotKey } };
 }

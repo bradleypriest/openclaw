@@ -1,4 +1,8 @@
-import type { BuiltinImplicitProviderConfig } from "../implicit-types.js";
+import type {
+  BuiltinImplicitProviderConfig,
+  BuiltinImplicitProviderResolverResult,
+  BuiltinImplicitProviderResolverContext,
+} from "../implicit-types.js";
 import { MINIMAX_API_COST } from "./models.js";
 
 const MINIMAX_IMPLICIT_API_BASE_URL = "https://api.minimax.chat/v1";
@@ -53,4 +57,25 @@ export function buildMinimaxPortalImplicitProviderConfig(): BuiltinImplicitProvi
       },
     ],
   };
+}
+
+export function resolveMinimaxImplicitProviders(
+  params: BuiltinImplicitProviderResolverContext,
+): BuiltinImplicitProviderResolverResult {
+  const providers: BuiltinImplicitProviderResolverResult = {};
+
+  const minimaxKey =
+    params.resolveEnvApiKeyVarName("minimax") ?? params.resolveApiKeyFromProfiles("minimax");
+  if (minimaxKey) {
+    providers.minimax = { ...buildMinimaxImplicitProviderConfig(), apiKey: minimaxKey };
+  }
+
+  if (params.listProfileIdsForProvider("minimax-portal").length > 0) {
+    providers["minimax-portal"] = {
+      ...buildMinimaxPortalImplicitProviderConfig(),
+      apiKey: MINIMAX_IMPLICIT_OAUTH_PLACEHOLDER,
+    };
+  }
+
+  return providers;
 }

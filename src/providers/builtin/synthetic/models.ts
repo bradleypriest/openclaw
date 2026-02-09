@@ -1,4 +1,9 @@
 import type { ModelDefinitionConfig } from "../../../config/types.js";
+import type {
+  BuiltinImplicitProviderConfig,
+  BuiltinImplicitProviderResolverContext,
+  BuiltinImplicitProviderResolverResult,
+} from "../implicit-types.js";
 
 export const SYNTHETIC_BASE_URL = "https://api.synthetic.new/anthropic";
 export const SYNTHETIC_DEFAULT_MODEL_ID = "hf:MiniMaxAI/MiniMax-M2.1";
@@ -185,4 +190,23 @@ export function buildSyntheticModelDefinition(entry: SyntheticCatalogEntry): Mod
     contextWindow: entry.contextWindow,
     maxTokens: entry.maxTokens,
   };
+}
+
+export function buildSyntheticProviderConfig(): BuiltinImplicitProviderConfig {
+  return {
+    baseUrl: SYNTHETIC_BASE_URL,
+    api: "anthropic-messages",
+    models: SYNTHETIC_MODEL_CATALOG.map(buildSyntheticModelDefinition),
+  };
+}
+
+export function resolveSyntheticImplicitProviders(
+  params: BuiltinImplicitProviderResolverContext,
+): BuiltinImplicitProviderResolverResult {
+  const syntheticKey =
+    params.resolveEnvApiKeyVarName("synthetic") ?? params.resolveApiKeyFromProfiles("synthetic");
+  if (!syntheticKey) {
+    return {};
+  }
+  return { synthetic: { ...buildSyntheticProviderConfig(), apiKey: syntheticKey } };
 }

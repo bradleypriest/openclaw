@@ -1,4 +1,8 @@
 import type { ModelDefinitionConfig } from "../../../config/types.js";
+import type {
+  BuiltinImplicitProviderResolverContext,
+  BuiltinImplicitProviderResolverResult,
+} from "../implicit-types.js";
 
 export const CLOUDFLARE_AI_GATEWAY_PROVIDER_ID = "cloudflare-ai-gateway";
 export const CLOUDFLARE_AI_GATEWAY_DEFAULT_MODEL_ID = "claude-sonnet-4-5";
@@ -41,4 +45,41 @@ export function resolveCloudflareAiGatewayBaseUrl(params: {
     return "";
   }
   return `https://gateway.ai.cloudflare.com/v1/${accountId}/${gatewayId}/anthropic`;
+}
+
+export function resolveCloudflareAiGatewayImplicitProviders(
+  params: BuiltinImplicitProviderResolverContext,
+): BuiltinImplicitProviderResolverResult {
+  const profileIds = params.listProfileIdsForProvider(CLOUDFLARE_AI_GATEWAY_PROVIDER_ID);
+  for (const profileId of profileIds) {
+    const credential = params.authStore.profiles[profileId];
+    if (credential?.type !== "api_key") {
+      continue;
+    }
+    const accountId = credential.metadata?.accountId?.trim();
+    const gatewayId = credential.metadata?.gatewayId?.trim();
+    if (!accountId || !gatewayId) {
+      continue;
+    }
+    const baseUrl = resolveCloudflareAiGatewayBaseUrl({ accountId, gatewayId });
+    if (!baseUrl) {
+      continue;
+    }
+    const apiKey =
+      params.resolveEnvApiKeyVarName(CLOUDFLARE_AI_GATEWAY_PROVIDER_ID) ??
+      credential.key?.trim() ??
+      "";
+    if (!apiKey) {
+      continue;
+    }
+    return {
+      [CLOUDFLARE_AI_GATEWAY_PROVIDER_ID]: {
+        baseUrl,
+        api: "anthropic-messages",
+        apiKey,
+        models: [buildCloudflareAiGatewayModelDefinition()],
+      },
+    };
+  }
+  return {};
 }

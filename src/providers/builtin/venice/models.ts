@@ -1,4 +1,9 @@
 import type { ModelDefinitionConfig } from "../../../config/types.js";
+import type {
+  BuiltinImplicitProviderConfig,
+  BuiltinImplicitProviderResolverContext,
+  BuiltinImplicitProviderResolverResult,
+} from "../implicit-types.js";
 
 export const VENICE_BASE_URL = "https://api.venice.ai/api/v1";
 export const VENICE_DEFAULT_MODEL_ID = "llama-3.3-70b";
@@ -390,4 +395,24 @@ export async function discoverVeniceModels(): Promise<ModelDefinitionConfig[]> {
     console.warn(`[venice-models] Discovery failed: ${String(error)}, using static catalog`);
     return VENICE_MODEL_CATALOG.map(buildVeniceModelDefinition);
   }
+}
+
+export async function buildVeniceProviderConfig(): Promise<BuiltinImplicitProviderConfig> {
+  const models = await discoverVeniceModels();
+  return {
+    baseUrl: VENICE_BASE_URL,
+    api: "openai-completions",
+    models,
+  };
+}
+
+export async function resolveVeniceImplicitProviders(
+  params: BuiltinImplicitProviderResolverContext,
+): Promise<BuiltinImplicitProviderResolverResult> {
+  const veniceKey =
+    params.resolveEnvApiKeyVarName("venice") ?? params.resolveApiKeyFromProfiles("venice");
+  if (!veniceKey) {
+    return {};
+  }
+  return { venice: { ...(await buildVeniceProviderConfig()), apiKey: veniceKey } };
 }

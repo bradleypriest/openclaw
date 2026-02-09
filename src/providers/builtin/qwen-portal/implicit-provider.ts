@@ -1,4 +1,8 @@
-import type { BuiltinImplicitProviderConfig } from "../implicit-types.js";
+import type {
+  BuiltinImplicitProviderConfig,
+  BuiltinImplicitProviderResolverContext,
+  BuiltinImplicitProviderResolverResult,
+} from "../implicit-types.js";
 
 const QWEN_PORTAL_IMPLICIT_BASE_URL = "https://portal.qwen.ai/v1";
 const QWEN_PORTAL_IMPLICIT_DEFAULT_CONTEXT_WINDOW = 128000;
@@ -36,5 +40,19 @@ export function buildQwenPortalImplicitProviderConfig(): BuiltinImplicitProvider
         maxTokens: QWEN_PORTAL_IMPLICIT_DEFAULT_MAX_TOKENS,
       },
     ],
+  };
+}
+
+export function resolveQwenPortalImplicitProviders(
+  params: BuiltinImplicitProviderResolverContext,
+): BuiltinImplicitProviderResolverResult {
+  if (params.listProfileIdsForProvider("qwen-portal").length === 0) {
+    return {};
+  }
+  return {
+    "qwen-portal": {
+      ...buildQwenPortalImplicitProviderConfig(),
+      apiKey: QWEN_PORTAL_IMPLICIT_OAUTH_PLACEHOLDER,
+    },
   };
 }
