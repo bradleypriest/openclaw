@@ -1,45 +1,10 @@
 import type { ChannelId } from "../channels/plugins/types.js";
+import type { BuiltinOnboardOptions } from "../providers/builtin/auth/onboard-types.js";
 import type { GatewayDaemonRuntime } from "./daemon-runtime.js";
 
-export type OnboardMode = "local" | "remote";
-export type BuiltInAuthChoice =
-  // Legacy alias for `setup-token` (kept for backwards CLI compatibility).
-  | "oauth"
-  | "setup-token"
-  | "claude-cli"
-  | "token"
-  | "chutes"
-  | "openai-codex"
-  | "openai-api-key"
-  | "openrouter-api-key"
-  | "ai-gateway-api-key"
-  | "cloudflare-ai-gateway-api-key"
-  | "moonshot-api-key"
-  | "moonshot-api-key-cn"
-  | "kimi-code-api-key"
-  | "synthetic-api-key"
-  | "venice-api-key"
-  | "codex-cli"
-  | "apiKey"
-  | "gemini-api-key"
-  | "google-antigravity"
-  | "google-gemini-cli"
-  | "zai-api-key"
-  | "xiaomi-api-key"
-  | "minimax-cloud"
-  | "minimax"
-  | "minimax-api"
-  | "minimax-api-lightning"
-  | "minimax-portal"
-  | "opencode-zen"
-  | "github-copilot"
-  | "copilot-proxy"
-  | "qwen-portal"
-  | "xai-api-key"
-  | "qianfan-api-key"
-  | "skip";
+export type { AuthChoice, BuiltInAuthChoice } from "../providers/builtin/auth/onboard-types.js";
 
-export type AuthChoice = BuiltInAuthChoice | `plugin:${string}`;
+export type OnboardMode = "local" | "remote";
 export type GatewayAuthChoice = "token" | "password";
 export type ResetScope = "config" | "config+creds+sessions" | "full";
 export type GatewayBind = "loopback" | "lan" | "auto" | "custom" | "tailnet";
@@ -49,7 +14,7 @@ export type ChannelChoice = ChannelId;
 // Legacy alias (pre-rename).
 export type ProviderChoice = ChannelChoice;
 
-export type OnboardOptions = {
+type OnboardRuntimeOptions = {
   mode?: OnboardMode;
   /** "manual" is an alias for "advanced". */
   flow?: "quickstart" | "advanced" | "manual";
@@ -58,36 +23,6 @@ export type OnboardOptions = {
   /** Required for non-interactive onboarding; skips the interactive risk prompt when true. */
   acceptRisk?: boolean;
   reset?: boolean;
-  authChoice?: AuthChoice;
-  /** Provider shortcut: <provider-id> or <npm-package>:<provider-id>. */
-  provider?: string;
-  /** Legacy alias for provider id in non-interactive mode. */
-  tokenProvider?: string;
-  /** API key shortcut for --provider in non-interactive mode. */
-  apiKey?: string;
-  /** Used when `authChoice=token` in non-interactive mode. */
-  token?: string;
-  tokenProfileId?: string;
-  /** Used when `authChoice=token` in non-interactive mode. */
-  tokenExpiresIn?: string;
-  anthropicApiKey?: string;
-  openaiApiKey?: string;
-  openrouterApiKey?: string;
-  aiGatewayApiKey?: string;
-  cloudflareAiGatewayAccountId?: string;
-  cloudflareAiGatewayGatewayId?: string;
-  cloudflareAiGatewayApiKey?: string;
-  moonshotApiKey?: string;
-  kimiCodeApiKey?: string;
-  geminiApiKey?: string;
-  zaiApiKey?: string;
-  xiaomiApiKey?: string;
-  minimaxApiKey?: string;
-  syntheticApiKey?: string;
-  veniceApiKey?: string;
-  opencodeZenApiKey?: string;
-  xaiApiKey?: string;
-  qianfanApiKey?: string;
   gatewayPort?: number;
   gatewayBind?: GatewayBind;
   gatewayAuth?: GatewayAuthChoice;
@@ -108,3 +43,5 @@ export type OnboardOptions = {
   remoteToken?: string;
   json?: boolean;
 };
+
+export type OnboardOptions = BuiltinOnboardOptions & OnboardRuntimeOptions;

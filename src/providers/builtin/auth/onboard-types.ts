@@ -31,6 +31,7 @@ export type BuiltInAuthChoice =
   | "copilot-proxy"
   | "qwen-portal"
   | "xai-api-key"
+  | "qianfan-api-key"
   | "skip";
 
 export type AuthChoice = BuiltInAuthChoice | `plugin:${string}`;
@@ -60,4 +61,5 @@ export type BuiltinOnboardOptions = {
   veniceApiKey?: string;
   opencodeZenApiKey?: string;
   xaiApiKey?: string;
+  qianfanApiKey?: string;
 };
