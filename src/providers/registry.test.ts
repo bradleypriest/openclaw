@@ -3,6 +3,7 @@ import {
   listProviderRegistryDiagnostics,
   listProviders,
   registerProvider,
+  registerPluginProvider,
   resolveProvider,
   resetProviderRegistryForTests,
 } from "./registry.js";
@@ -69,5 +70,25 @@ describe("provider registry", () => {
 
     expect(listProviderRegistryDiagnostics()).toHaveLength(0);
     expect(resolveProvider("openai")?.configPatch).toBeDefined();
+  });
+
+  it("registers plugin providers via adapter", () => {
+    registerPluginProvider({
+      id: "acme",
+      label: "AcmeAI",
+      auth: [
+        {
+          id: "oauth",
+          label: "OAuth",
+          kind: "oauth",
+          run: async () => ({ profiles: [] }),
+        },
+      ],
+    });
+
+    const resolved = resolveProvider("acme");
+    expect(resolved?.id).toBe("acme");
+    expect(resolved?.label).toBe("AcmeAI");
+    expect(resolved?.auth).toHaveLength(1);
   });
 });

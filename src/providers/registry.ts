@@ -1,5 +1,5 @@
 import type { OpenClawConfig } from "../config/config.js";
-import type { ProviderAuthMethod } from "../plugins/types.js";
+import type { ProviderAuthMethod, ProviderPlugin } from "../plugins/types.js";
 import { normalizeProviderId } from "../agents/model-selection.js";
 
 export type ProviderRegistryDiagnostic = {
@@ -16,6 +16,15 @@ export type ProviderRegistration = {
   defaultModel?: string;
   configPatch?: Partial<OpenClawConfig>;
 };
+
+export function registerPluginProvider(provider: ProviderPlugin): void {
+  registerProvider({
+    id: provider.id,
+    label: provider.label,
+    aliases: provider.aliases,
+    auth: provider.auth,
+  });
+}
 
 const providerRegistry = new Map<string, ProviderRegistration>();
 const providerDiagnostics: ProviderRegistryDiagnostic[] = [];

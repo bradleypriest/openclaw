@@ -30,6 +30,7 @@ import type {
   PluginHookRegistration as TypedPluginHookRegistration,
 } from "./types.js";
 import { registerInternalHook } from "../hooks/internal-hooks.js";
+import { registerPluginProvider } from "../providers/registry.js";
 import { resolveUserPath } from "../utils.js";
 import { registerPluginCommand } from "./commands.js";
 import { normalizePluginHttpPath } from "./http-path.js";
@@ -380,6 +381,7 @@ export function createPluginRegistry(registryParams: PluginRegistryParams) {
       provider,
       source: record.source,
     });
+    registerPluginProvider(provider);
   };
 
   const registerCli = (

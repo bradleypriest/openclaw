@@ -28,7 +28,7 @@
       "id": "plugin-adapter",
       "title": "Adapter for plugin provider API",
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "Existing plugin providers register without changes",
         "defaultModel + configPatch still work",
