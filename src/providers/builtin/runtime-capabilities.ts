@@ -1,5 +1,10 @@
+import { shouldNormalizeAntigravityThinkingViaHook } from "./runtime/antigravity-thinking-normalization.js";
 import { isCacheTtlEligibleViaProviderHook } from "./runtime/cache-ttl-eligibility.js";
 import { hasBuiltinProviderTag } from "./runtime/provider-tags.js";
+import {
+  resolveThoughtSignatureSanitizationViaHook,
+  type ThoughtSignatureSanitizationPolicy,
+} from "./runtime/thought-signature-sanitization.js";
 
 const GOOGLE_MODEL_APIS = new Set([
   "google-antigravity",
@@ -45,10 +50,16 @@ export function isAntigravityClaudeModel(params: {
 }): boolean {
   const provider = params.provider ?? undefined;
   const api = params.api ?? undefined;
-  if (!isGoogleAntigravityProvider(provider) && !isGoogleAntigravityProvider(api)) {
+  const antigravityProvider =
+    (isGoogleAntigravityProvider(provider) ? provider : undefined) ??
+    (isGoogleAntigravityProvider(api) ? api : undefined);
+  if (!antigravityProvider) {
     return false;
   }
-  return params.modelId?.toLowerCase().includes("claude") ?? false;
+  return shouldNormalizeAntigravityThinkingViaHook({
+    provider: antigravityProvider,
+    modelId: params.modelId ?? "",
+  });
 }
 
 export function requiresOAuthProjectId(provider?: string): boolean {
@@ -61,6 +72,19 @@ export function supportsCacheRetentionStreamParam(provider?: string): boolean {
 
 export function shouldSanitizeGeminiThoughtSignatures(provider?: string): boolean {
   return hasBuiltinProviderTag(provider, "sanitize-gemini-thought-signatures");
+}
+
+export function resolveProviderThoughtSignatureSanitizationPolicy(params: {
+  provider?: string | null;
+  modelId?: string | null;
+}): ThoughtSignatureSanitizationPolicy | undefined {
+  if (!shouldSanitizeGeminiThoughtSignatures(params.provider ?? undefined)) {
+    return undefined;
+  }
+  return resolveThoughtSignatureSanitizationViaHook({
+    provider: params.provider ?? "",
+    modelId: params.modelId ?? "",
+  });
 }
 
 export function isCacheTtlEligibleProvider(params: { provider: string; modelId: string }): boolean {

@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { isCacheTtlEligibleProvider } from "./runtime-capabilities.js";
+import {
+  isAntigravityClaudeModel,
+  isCacheTtlEligibleProvider,
+  resolveProviderThoughtSignatureSanitizationPolicy,
+} from "./runtime-capabilities.js";
 
 describe("isCacheTtlEligibleProvider", () => {
   it("returns true for cache-ttl eligible providers", () => {
@@ -34,5 +38,41 @@ describe("isCacheTtlEligibleProvider", () => {
         modelId: "gemini-2.5-pro",
       }),
     ).toBe(false);
+  });
+});
+
+describe("isAntigravityClaudeModel", () => {
+  it("delegates model matching via provider hook", () => {
+    expect(
+      isAntigravityClaudeModel({
+        provider: "google-antigravity",
+        modelId: "claude-3-7-sonnet",
+      }),
+    ).toBe(true);
+
+    expect(
+      isAntigravityClaudeModel({
+        provider: "google-antigravity",
+        modelId: "gemini-2.5-pro",
+      }),
+    ).toBe(false);
+  });
+});
+
+describe("resolveProviderThoughtSignatureSanitizationPolicy", () => {
+  it("delegates policy resolution via provider hook", () => {
+    expect(
+      resolveProviderThoughtSignatureSanitizationPolicy({
+        provider: "openrouter",
+        modelId: "google/gemini-2.5-pro",
+      }),
+    ).toEqual({ allowBase64Only: true, includeCamelCase: true });
+
+    expect(
+      resolveProviderThoughtSignatureSanitizationPolicy({
+        provider: "openrouter",
+        modelId: "anthropic/claude-sonnet-4-5",
+      }),
+    ).toBeUndefined();
   });
 });

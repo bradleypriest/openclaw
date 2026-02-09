@@ -4,7 +4,7 @@ import {
   isAnthropicProvider,
   isGoogleModelApi,
   isOpenAiFamilyProvider,
-  shouldSanitizeGeminiThoughtSignatures,
+  resolveProviderThoughtSignatureSanitizationPolicy,
 } from "./runtime-capabilities.js";
 
 type ToolCallIdMode = "strict" | "strict9";
@@ -63,15 +63,18 @@ export function resolveBuiltinTranscriptPolicyFlags(params: {
   const isAnthropic = isAnthropicApi(params.modelApi, provider);
   const isOpenAi = isOpenAiProvider(provider) || (!provider && isOpenAiApi(params.modelApi));
   const isMistral = isMistralTranscriptModel({ provider, modelId });
-  const isOpenRouterGemini =
-    shouldSanitizeGeminiThoughtSignatures(provider) && modelId.toLowerCase().includes("gemini");
+  const thoughtSignatureSanitization = resolveProviderThoughtSignatureSanitizationPolicy({
+    provider,
+    modelId,
+  });
   const isAntigravityClaudeModel = isBuiltinAntigravityClaudeModel({
     api: params.modelApi,
     provider,
     modelId,
   });
 
-  const needsNonImageSanitize = isGoogle || isAnthropic || isMistral || isOpenRouterGemini;
+  const needsNonImageSanitize =
+    isGoogle || isAnthropic || isMistral || Boolean(thoughtSignatureSanitization);
   const sanitizeToolCallIds = isGoogle || isMistral;
   const toolCallIdMode: ToolCallIdMode | undefined = isMistral
     ? "strict9"
@@ -79,9 +82,7 @@ export function resolveBuiltinTranscriptPolicyFlags(params: {
       ? "strict"
       : undefined;
   const repairToolUseResultPairing = isGoogle || isAnthropic;
-  const sanitizeThoughtSignatures = isOpenRouterGemini
-    ? { allowBase64Only: true, includeCamelCase: true }
-    : undefined;
+  const sanitizeThoughtSignatures = thoughtSignatureSanitization;
 
   return {
     isOpenAi,
