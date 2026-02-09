@@ -11,6 +11,10 @@ export type ProviderEnvApiKeyResolver = () => ProviderEnvApiKey | null;
 
 const providerEnvApiKeyResolvers = new Map<string, ProviderEnvApiKeyResolver>();
 
+const LEGACY_PROVIDER_ENV_VAR_CANDIDATES: Record<string, string[]> = {
+  voyage: ["VOYAGE_API_KEY"],
+};
+
 export function resolveProviderEnvVarCandidates(
   provider: string,
   params: {
@@ -21,7 +25,7 @@ export function resolveProviderEnvVarCandidates(
 ): string[] {
   const normalized = normalizeProviderId(provider);
   const base = resolveBuiltinProviderEnvVarCandidates(normalized);
-  const candidates = [...base];
+  const candidates = [...base, ...(LEGACY_PROVIDER_ENV_VAR_CANDIDATES[normalized] ?? [])];
 
   if (params.includeDeclarative !== false) {
     const declarative = findDeclarativeProviderAuthByProvider(normalized, {
@@ -55,7 +59,12 @@ export function listProviderEnvApiKeyResolverProviders(): string[] {
 }
 
 export function listProviderEnvVarCandidateProviders(): string[] {
-  return [...new Set(listBuiltinProviderEnvVarCandidateProviders())];
+  return [
+    ...new Set([
+      ...listBuiltinProviderEnvVarCandidateProviders(),
+      ...Object.keys(LEGACY_PROVIDER_ENV_VAR_CANDIDATES),
+    ]),
+  ];
 }
 
 export function resolveProviderEnvApiKey(params: {

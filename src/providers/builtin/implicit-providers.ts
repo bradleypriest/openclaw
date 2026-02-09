@@ -13,6 +13,7 @@ import {
 } from "./minimax/implicit-provider.js";
 import { buildMoonshotProviderConfig } from "./moonshot/models.js";
 import { buildOllamaImplicitProviderConfig } from "./ollama/implicit-provider.js";
+import { buildQianfanProviderConfig } from "./qianfan/models.js";
 import {
   buildQwenPortalImplicitProviderConfig,
   QWEN_PORTAL_IMPLICIT_OAUTH_PLACEHOLDER,
@@ -132,6 +133,12 @@ export async function resolveBuiltinImplicitProviders(params: {
     params.resolveEnvApiKeyVarName("ollama") ?? params.resolveApiKeyFromProfiles("ollama");
   if (ollamaKey) {
     providers.ollama = { ...(await buildOllamaImplicitProviderConfig()), apiKey: ollamaKey };
+  }
+
+  const qianfanKey =
+    params.resolveEnvApiKeyVarName("qianfan") ?? params.resolveApiKeyFromProfiles("qianfan");
+  if (qianfanKey) {
+    providers.qianfan = { ...buildQianfanProviderConfig(), apiKey: qianfanKey };
   }
 
   return providers;

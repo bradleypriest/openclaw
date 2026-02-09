@@ -19,6 +19,7 @@ import {
 } from "./openai/descriptor.js";
 import { OPENCODE_PROVIDER_DESCRIPTOR } from "./opencode/descriptor.js";
 import { OPENROUTER_PROVIDER_DESCRIPTOR } from "./openrouter/descriptor.js";
+import { QIANFAN_PROVIDER_DESCRIPTOR } from "./qianfan/descriptor.js";
 import { QWEN_PORTAL_PROVIDER_DESCRIPTOR } from "./qwen-portal/descriptor.js";
 import { ZAI_PROVIDER_DESCRIPTOR } from "./zai/descriptor.js";
 
@@ -36,6 +37,7 @@ const BUILTIN_PROVIDER_DESCRIPTORS: BuiltinProviderDescriptor[] = [
   MINIMAX_PORTAL_PROVIDER_DESCRIPTOR,
   KIMI_CODING_PROVIDER_DESCRIPTOR,
   OPENCODE_PROVIDER_DESCRIPTOR,
+  QIANFAN_PROVIDER_DESCRIPTOR,
   GROQ_PROVIDER_DESCRIPTOR,
   DEEPGRAM_PROVIDER_DESCRIPTOR,
   CEREBRAS_PROVIDER_DESCRIPTOR,
