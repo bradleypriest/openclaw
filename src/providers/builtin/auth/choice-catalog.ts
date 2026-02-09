@@ -22,6 +22,14 @@ export const BUILTIN_AUTH_CHOICE_CATALOG: BuiltinAuthChoiceCatalogEntry[] = [
     groupHint: "API key",
   },
   {
+    choice: "qianfan-api-key",
+    providerId: "qianfan",
+    label: "Baidu Qianfan API key",
+    groupId: "qianfan",
+    groupLabel: "Baidu Qianfan",
+    groupHint: "DeepSeek V3.2 + ERNIE",
+  },
+  {
     choice: "openai-codex",
     providerId: "openai-codex",
     label: "OpenAI Codex (ChatGPT OAuth)",

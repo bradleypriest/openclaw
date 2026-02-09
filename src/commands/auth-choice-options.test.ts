@@ -137,6 +137,16 @@ describe("buildAuthChoiceOptions", () => {
     expect(options.some((opt) => opt.value === "xai-api-key")).toBe(true);
   });
 
+  it("includes Qianfan auth choice", () => {
+    const store: AuthProfileStore = { version: 1, profiles: {} };
+    const options = buildAuthChoiceOptions({
+      store,
+      includeSkip: false,
+    });
+
+    expect(options.some((opt) => opt.value === "qianfan-api-key")).toBe(true);
+  });
+
   it("includes declarative plugin API-key auth choices", () => {
     resolveDeclarativeProviderAuthSpecs.mockReturnValue([
       {

@@ -34,6 +34,11 @@ import {
   OPENROUTER_PROVIDER_AUTH_CHOICE_ALIASES,
 } from "../openrouter/api-key.js";
 import {
+  QIANFAN_INTERACTIVE_API_KEY_SPECS,
+  QIANFAN_NON_INTERACTIVE_API_KEY_SPECS,
+  QIANFAN_PROVIDER_AUTH_CHOICE_ALIASES,
+} from "../qianfan/api-key.js";
+import {
   SYNTHETIC_INTERACTIVE_API_KEY_SPECS,
   SYNTHETIC_NON_INTERACTIVE_API_KEY_SPECS,
   SYNTHETIC_PROVIDER_AUTH_CHOICE_ALIASES,
@@ -86,6 +91,7 @@ export function ensureBuiltinApiKeySpecsRegistered(): void {
   registerBuiltinInteractiveApiKeySpecs(SYNTHETIC_INTERACTIVE_API_KEY_SPECS);
   registerBuiltinInteractiveApiKeySpecs(VENICE_INTERACTIVE_API_KEY_SPECS);
   registerBuiltinInteractiveApiKeySpecs(OPENCODE_INTERACTIVE_API_KEY_SPECS);
+  registerBuiltinInteractiveApiKeySpecs(QIANFAN_INTERACTIVE_API_KEY_SPECS);
 
   registerBuiltinNonInteractiveApiKeySpecs(GOOGLE_NON_INTERACTIVE_API_KEY_SPECS);
   registerBuiltinNonInteractiveApiKeySpecs(ZAI_NON_INTERACTIVE_API_KEY_SPECS);
@@ -100,6 +106,7 @@ export function ensureBuiltinApiKeySpecsRegistered(): void {
   registerBuiltinNonInteractiveApiKeySpecs(VENICE_NON_INTERACTIVE_API_KEY_SPECS);
   registerBuiltinNonInteractiveApiKeySpecs(MINIMAX_NON_INTERACTIVE_API_KEY_SPECS);
   registerBuiltinNonInteractiveApiKeySpecs(OPENCODE_NON_INTERACTIVE_API_KEY_SPECS);
+  registerBuiltinNonInteractiveApiKeySpecs(QIANFAN_NON_INTERACTIVE_API_KEY_SPECS);
 
   registerBuiltinApiKeyProviderAuthChoiceAliases(OPENAI_PROVIDER_AUTH_CHOICE_ALIASES);
   registerBuiltinApiKeyProviderAuthChoiceAliases(OPENROUTER_PROVIDER_AUTH_CHOICE_ALIASES);
@@ -116,6 +123,7 @@ export function ensureBuiltinApiKeySpecsRegistered(): void {
   registerBuiltinApiKeyProviderAuthChoiceAliases(SYNTHETIC_PROVIDER_AUTH_CHOICE_ALIASES);
   registerBuiltinApiKeyProviderAuthChoiceAliases(VENICE_PROVIDER_AUTH_CHOICE_ALIASES);
   registerBuiltinApiKeyProviderAuthChoiceAliases(OPENCODE_PROVIDER_AUTH_CHOICE_ALIASES);
+  registerBuiltinApiKeyProviderAuthChoiceAliases(QIANFAN_PROVIDER_AUTH_CHOICE_ALIASES);
   registerBuiltinApiKeyProviderAuthChoiceAliases(MINIMAX_PROVIDER_AUTH_CHOICE_ALIASES);
 
   registered = true;
