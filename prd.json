@@ -17,7 +17,7 @@
       "id": "configpatch-guard",
       "title": "Restrict provider configPatch surface",
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "Only models.providers.<id>, models.mode, agents.defaults.models are allowed",
         "Invalid keys emit diagnostics",
