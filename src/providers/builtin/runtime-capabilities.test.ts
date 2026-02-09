@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   isAntigravityClaudeModel,
   isCacheTtlEligibleProvider,
+  isGoogleModelApi,
   resolveProviderThoughtSignatureSanitizationPolicy,
 } from "./runtime-capabilities.js";
 
@@ -74,5 +75,12 @@ describe("resolveProviderThoughtSignatureSanitizationPolicy", () => {
         modelId: "anthropic/claude-sonnet-4-5",
       }),
     ).toBeUndefined();
+  });
+});
+
+describe("isGoogleModelApi", () => {
+  it("resolves google model APIs via registry tags", () => {
+    expect(isGoogleModelApi("google-generative-ai")).toBe(true);
+    expect(isGoogleModelApi("openai-responses")).toBe(false);
   });
 });

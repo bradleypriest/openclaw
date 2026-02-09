@@ -1,16 +1,12 @@
 import { shouldNormalizeAntigravityThinkingViaHook } from "./runtime/antigravity-thinking-normalization.js";
 import { isCacheTtlEligibleViaProviderHook } from "./runtime/cache-ttl-eligibility.js";
+import { ensureBuiltinModelApiTagsRegistered } from "./runtime/model-api-registry-bootstrap.js";
+import { hasBuiltinModelApiTag } from "./runtime/model-api-registry-core.js";
 import { hasBuiltinProviderTag } from "./runtime/provider-tags.js";
 import {
   resolveThoughtSignatureSanitizationViaHook,
   type ThoughtSignatureSanitizationPolicy,
 } from "./runtime/thought-signature-sanitization.js";
-
-const GOOGLE_MODEL_APIS = new Set([
-  "google-antigravity",
-  "google-gemini-cli",
-  "google-generative-ai",
-]);
 
 export function isAnthropicProvider(provider?: string): boolean {
   return hasBuiltinProviderTag(provider, "anthropic");
@@ -33,10 +29,8 @@ export function isGoogleProvider(provider?: string): boolean {
 }
 
 export function isGoogleModelApi(api?: string | null): boolean {
-  if (!api?.trim()) {
-    return false;
-  }
-  return GOOGLE_MODEL_APIS.has(api.trim().toLowerCase());
+  ensureBuiltinModelApiTagsRegistered();
+  return hasBuiltinModelApiTag(api, "google");
 }
 
 export function isGoogleAntigravityProvider(provider?: string): boolean {

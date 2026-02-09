@@ -6,6 +6,8 @@ import {
   isOpenAiFamilyProvider,
   resolveProviderThoughtSignatureSanitizationPolicy,
 } from "./runtime-capabilities.js";
+import { ensureBuiltinModelApiTagsRegistered } from "./runtime/model-api-registry-bootstrap.js";
+import { hasBuiltinModelApiTag } from "./runtime/model-api-registry-core.js";
 
 type ToolCallIdMode = "strict" | "strict9";
 
@@ -27,18 +29,9 @@ type TranscriptPolicyFlags = {
   preserveSignatures: boolean;
 };
 
-const OPENAI_MODEL_APIS = new Set([
-  "openai",
-  "openai-completions",
-  "openai-responses",
-  "openai-codex-responses",
-]);
-
 function isOpenAiApi(modelApi?: string | null): boolean {
-  if (!modelApi) {
-    return false;
-  }
-  return OPENAI_MODEL_APIS.has(modelApi);
+  ensureBuiltinModelApiTagsRegistered();
+  return hasBuiltinModelApiTag(modelApi, "openai");
 }
 
 function isOpenAiProvider(provider?: string | null): boolean {
