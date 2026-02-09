@@ -32,3 +32,9 @@ export type BuiltinImplicitProviderResolverResult = Partial<
 export type BuiltinImplicitProviderResolver = (
   params: BuiltinImplicitProviderResolverContext,
 ) => BuiltinImplicitProviderResolverResult | Promise<BuiltinImplicitProviderResolverResult>;
+
+export type BuiltinImplicitProviderResolverRegistration = {
+  id: string;
+  priority: number;
+  resolve: BuiltinImplicitProviderResolver;
+};

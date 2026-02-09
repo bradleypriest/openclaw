@@ -1,37 +1,14 @@
 import type { OpenClawConfig } from "../../config/config.js";
 import { discoverBedrockModels } from "./amazon-bedrock/discovery.js";
-import { resolveCloudflareAiGatewayImplicitProviders } from "./cloudflare-ai-gateway/models.js";
 import { DEFAULT_COPILOT_API_BASE_URL, resolveCopilotApiToken } from "./github-copilot/token.js";
-import {
-  type BuiltinAuthStoreLike,
-  type BuiltinImplicitProviderConfig,
-  type BuiltinImplicitProviderResolver,
-} from "./implicit-types.js";
-import { resolveMinimaxImplicitProviders } from "./minimax/implicit-provider.js";
-import { resolveMoonshotImplicitProviders } from "./moonshot/models.js";
-import { resolveOllamaImplicitProviders } from "./ollama/implicit-provider.js";
-import { resolveQianfanImplicitProviders } from "./qianfan/models.js";
-import { resolveQwenPortalImplicitProviders } from "./qwen-portal/implicit-provider.js";
-import { resolveSyntheticImplicitProviders } from "./synthetic/models.js";
-import { resolveVeniceImplicitProviders } from "./venice/models.js";
-import { resolveXiaomiImplicitProviders } from "./xiaomi/models.js";
+import { ensureBuiltinImplicitProviderResolversRegistered } from "./implicit-provider-registry-bootstrap.js";
+import { listRegisteredBuiltinImplicitProviderResolvers } from "./implicit-provider-registry-core.js";
+import { type BuiltinAuthStoreLike, type BuiltinImplicitProviderConfig } from "./implicit-types.js";
 
 export type { BuiltinImplicitProviderConfig } from "./implicit-types.js";
 
 export const BUILTIN_IMPLICIT_BEDROCK_PROVIDER_ID = "amazon-bedrock";
 export const BUILTIN_IMPLICIT_COPILOT_PROVIDER_ID = "github-copilot";
-
-const BUILTIN_IMPLICIT_PROVIDER_RESOLVERS: BuiltinImplicitProviderResolver[] = [
-  resolveMinimaxImplicitProviders,
-  resolveMoonshotImplicitProviders,
-  resolveSyntheticImplicitProviders,
-  resolveVeniceImplicitProviders,
-  resolveQwenPortalImplicitProviders,
-  resolveXiaomiImplicitProviders,
-  resolveCloudflareAiGatewayImplicitProviders,
-  resolveOllamaImplicitProviders,
-  resolveQianfanImplicitProviders,
-];
 
 export async function resolveBuiltinImplicitProviders(params: {
   authStore: BuiltinAuthStoreLike;
@@ -39,9 +16,10 @@ export async function resolveBuiltinImplicitProviders(params: {
   resolveEnvApiKeyVarName: (provider: string) => string | undefined;
   resolveApiKeyFromProfiles: (provider: string) => string | undefined;
 }): Promise<Record<string, BuiltinImplicitProviderConfig>> {
+  ensureBuiltinImplicitProviderResolversRegistered();
   const providers: Record<string, BuiltinImplicitProviderConfig> = {};
 
-  for (const resolveProviders of BUILTIN_IMPLICIT_PROVIDER_RESOLVERS) {
+  for (const resolveProviders of listRegisteredBuiltinImplicitProviderResolvers()) {
     const resolved = await resolveProviders(params);
     for (const [providerId, config] of Object.entries(resolved)) {
       if (config) {
