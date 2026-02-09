@@ -6,6 +6,7 @@ import { DEEPGRAM_PROVIDER_DESCRIPTOR } from "./deepgram/descriptor.js";
 import { GITHUB_COPILOT_PROVIDER_DESCRIPTOR } from "./github-copilot/descriptor.js";
 import { GOOGLE_ANTIGRAVITY_PROVIDER_DESCRIPTOR } from "./google-antigravity/descriptor.js";
 import { GOOGLE_GEMINI_CLI_PROVIDER_DESCRIPTOR } from "./google-gemini-cli/descriptor.js";
+import { GOOGLE_PROVIDER_DESCRIPTOR } from "./google/descriptor.js";
 import { GROQ_PROVIDER_DESCRIPTOR } from "./groq/descriptor.js";
 import { KIMI_CODING_PROVIDER_DESCRIPTOR } from "./kimi-coding/descriptor.js";
 import { MINIMAX_PORTAL_PROVIDER_DESCRIPTOR } from "./minimax/descriptor.js";
@@ -35,6 +36,7 @@ export function ensureBuiltinProviderDescriptorsRegistered(): void {
     GITHUB_COPILOT_PROVIDER_DESCRIPTOR,
     OPENAI_PROVIDER_DESCRIPTOR,
     OPENAI_CODEX_PROVIDER_DESCRIPTOR,
+    GOOGLE_PROVIDER_DESCRIPTOR,
     GOOGLE_ANTIGRAVITY_PROVIDER_DESCRIPTOR,
     GOOGLE_GEMINI_CLI_PROVIDER_DESCRIPTOR,
     CHUTES_PROVIDER_DESCRIPTOR,
