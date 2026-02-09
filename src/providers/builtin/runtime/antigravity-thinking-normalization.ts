@@ -1,19 +1,12 @@
-import { normalizeProviderId } from "../../provider-id.js";
-
-type AntigravityThinkingNormalizationHook = (modelId: string) => boolean;
-
-const ANTIGRAVITY_THINKING_NORMALIZATION_HOOKS: Record<
-  string,
-  AntigravityThinkingNormalizationHook
-> = {
-  "google-antigravity": (modelId) => modelId.toLowerCase().includes("claude"),
-};
+import { ensureBuiltinAntigravityThinkingNormalizationHooksRegistered } from "./antigravity-thinking-registry-bootstrap.js";
+import { resolveBuiltinAntigravityThinkingNormalizationHook } from "./antigravity-thinking-registry-core.js";
 
 export function shouldNormalizeAntigravityThinkingViaHook(params: {
   provider: string;
   modelId: string;
 }): boolean {
-  const hook = ANTIGRAVITY_THINKING_NORMALIZATION_HOOKS[normalizeProviderId(params.provider)];
+  ensureBuiltinAntigravityThinkingNormalizationHooksRegistered();
+  const hook = resolveBuiltinAntigravityThinkingNormalizationHook(params.provider);
   if (!hook) {
     return false;
   }

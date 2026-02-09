@@ -1,31 +1,17 @@
-import { normalizeProviderId } from "../../provider-id.js";
+import { ensureBuiltinThoughtSignatureSanitizationHooksRegistered } from "./thought-signature-registry-bootstrap.js";
+import {
+  resolveBuiltinThoughtSignatureSanitizationHook,
+  type ThoughtSignatureSanitizationPolicy,
+} from "./thought-signature-registry-core.js";
 
-export type ThoughtSignatureSanitizationPolicy = {
-  allowBase64Only?: boolean;
-  includeCamelCase?: boolean;
-};
-
-type ThoughtSignatureSanitizationHook = (
-  modelId: string,
-) => ThoughtSignatureSanitizationPolicy | undefined;
-
-const GEMINI_SANITIZATION_POLICY: ThoughtSignatureSanitizationPolicy = {
-  allowBase64Only: true,
-  includeCamelCase: true,
-};
-
-const THOUGHT_SIGNATURE_SANITIZATION_HOOKS: Record<string, ThoughtSignatureSanitizationHook> = {
-  openrouter: (modelId) =>
-    modelId.toLowerCase().includes("gemini") ? GEMINI_SANITIZATION_POLICY : undefined,
-  opencode: (modelId) =>
-    modelId.toLowerCase().includes("gemini") ? GEMINI_SANITIZATION_POLICY : undefined,
-};
+export type { ThoughtSignatureSanitizationPolicy };
 
 export function resolveThoughtSignatureSanitizationViaHook(params: {
   provider: string;
   modelId: string;
 }): ThoughtSignatureSanitizationPolicy | undefined {
-  const hook = THOUGHT_SIGNATURE_SANITIZATION_HOOKS[normalizeProviderId(params.provider)];
+  ensureBuiltinThoughtSignatureSanitizationHooksRegistered();
+  const hook = resolveBuiltinThoughtSignatureSanitizationHook(params.provider);
   if (!hook) {
     return undefined;
   }

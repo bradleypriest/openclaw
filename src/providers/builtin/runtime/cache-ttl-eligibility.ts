@@ -1,16 +1,12 @@
-import { normalizeProviderId } from "../../provider-id.js";
-
-type BuiltinCacheTtlEligibilityHook = (modelId: string) => boolean;
-
-const CACHE_TTL_ELIGIBILITY_HOOKS: Record<string, BuiltinCacheTtlEligibilityHook> = {
-  openrouter: (modelId) => modelId.toLowerCase().startsWith("anthropic/"),
-};
+import { ensureBuiltinCacheTtlEligibilityHooksRegistered } from "./cache-ttl-registry-bootstrap.js";
+import { resolveBuiltinCacheTtlEligibilityHook } from "./cache-ttl-registry-core.js";
 
 export function isCacheTtlEligibleViaProviderHook(params: {
   provider: string;
   modelId: string;
 }): boolean {
-  const hook = CACHE_TTL_ELIGIBILITY_HOOKS[normalizeProviderId(params.provider)];
+  ensureBuiltinCacheTtlEligibilityHooksRegistered();
+  const hook = resolveBuiltinCacheTtlEligibilityHook(params.provider);
   if (!hook) {
     return false;
   }
