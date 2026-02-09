@@ -1,20 +1,27 @@
-import { normalizeProviderId } from "../../provider-id.js";
+import { LEGACY_ANTHROPIC_DEFAULT_PROFILE_ID } from "../anthropic/legacy-profiles.js";
+import { ensureBuiltinLegacyProfileRulesRegistered } from "./legacy-profile-registry-bootstrap.js";
+import { resolveBuiltinLegacyProfileRules } from "./legacy-profile-registry-core.js";
 
-export const LEGACY_ANTHROPIC_DEFAULT_PROFILE_ID = "anthropic:default";
-const LEGACY_CLAUDE_CLI_PROFILE_ID = "anthropic:claude-cli";
-const LEGACY_CODEX_CLI_PROFILE_ID = "openai-codex:codex-cli";
+export { LEGACY_ANTHROPIC_DEFAULT_PROFILE_ID };
+
+export function resolveLegacyDefaultOAuthProfileId(provider: string): string | undefined {
+  ensureBuiltinLegacyProfileRulesRegistered();
+  return resolveBuiltinLegacyProfileRules(provider)?.defaultOAuthProfileId;
+}
 
 export function supportsLegacyDefaultOAuthProfile(provider: string): boolean {
-  return normalizeProviderId(provider) === "anthropic";
+  return Boolean(resolveLegacyDefaultOAuthProfileId(provider));
 }
 
 export function isDeprecatedClaudeCliProfile(params: {
   provider: string;
   profileId: string;
 }): boolean {
+  ensureBuiltinLegacyProfileRulesRegistered();
   return (
-    normalizeProviderId(params.provider) === "anthropic" &&
-    params.profileId === LEGACY_CLAUDE_CLI_PROFILE_ID
+    resolveBuiltinLegacyProfileRules(params.provider)?.deprecatedProfileIds?.includes(
+      params.profileId,
+    ) ?? false
   );
 }
 
@@ -22,8 +29,10 @@ export function isDeprecatedCodexCliProfile(params: {
   provider: string;
   profileId: string;
 }): boolean {
+  ensureBuiltinLegacyProfileRulesRegistered();
   return (
-    normalizeProviderId(params.provider) === "openai-codex" &&
-    params.profileId === LEGACY_CODEX_CLI_PROFILE_ID
+    resolveBuiltinLegacyProfileRules(params.provider)?.deprecatedProfileIds?.includes(
+      params.profileId,
+    ) ?? false
   );
 }

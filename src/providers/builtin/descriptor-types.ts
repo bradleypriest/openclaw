@@ -21,7 +21,8 @@ export type BuiltinProviderTag =
   | "supports-cache-retention"
   | "sanitize-gemini-thought-signatures"
   | "cache-ttl-eligible"
-  | "cache-ttl-via-hook";
+  | "cache-ttl-via-hook"
+  | "external-cli-oauth";
 
 export type BuiltinProviderDescriptor = {
   providerId: string;

@@ -5,4 +5,7 @@ export const QWEN_PORTAL_PROVIDER_DESCRIPTOR = defineBuiltinProviderDescriptor({
   auth: {
     envVarCandidates: ["QWEN_OAUTH_TOKEN", "QWEN_PORTAL_API_KEY"],
   },
+  runtime: {
+    tags: ["external-cli-oauth"],
+  },
 });

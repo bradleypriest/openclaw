@@ -5,4 +5,7 @@ export const MINIMAX_PORTAL_PROVIDER_DESCRIPTOR = defineBuiltinProviderDescripto
   auth: {
     envVarCandidates: ["MINIMAX_OAUTH_TOKEN", "MINIMAX_API_KEY"],
   },
+  runtime: {
+    tags: ["external-cli-oauth"],
+  },
 });
