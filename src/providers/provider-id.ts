@@ -1,12 +1,8 @@
-const PROVIDER_ID_ALIASES: Record<string, string> = {
-  "z.ai": "zai",
-  "z-ai": "zai",
-  "opencode-zen": "opencode",
-  qwen: "qwen-portal",
-  "kimi-code": "kimi-coding",
-};
+import { ensureProviderIdAliasesRegistered } from "./provider-id-alias-registry.js";
+import { resolveProviderIdAlias } from "./provider-id-aliases.js";
 
 export function normalizeProviderId(provider: string): string {
   const normalized = provider.trim().toLowerCase();
-  return PROVIDER_ID_ALIASES[normalized] ?? normalized;
+  ensureProviderIdAliasesRegistered();
+  return resolveProviderIdAlias(normalized) ?? normalized;
 }
