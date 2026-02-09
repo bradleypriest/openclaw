@@ -1,3 +1,4 @@
 Provider Registry Ralph Loop
 
 - Initialized PRD and registry plan.
+- Added provider registry core with diagnostics and tests.

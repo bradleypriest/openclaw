@@ -6,7 +6,7 @@
       "id": "registry-core",
       "title": "Add ProviderRegistry core API",
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "ProviderRegistry exposes registerProvider/resolveProvider/listProviders",
         "Duplicate ids emit diagnostics and ignore later registration",
