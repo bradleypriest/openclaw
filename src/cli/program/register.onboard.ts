@@ -8,6 +8,7 @@ import type {
   TailscaleMode,
 } from "../../commands/onboard-types.js";
 import { onboardCommand } from "../../commands/onboard.js";
+import { listProviderAuthChoices } from "../../providers/registry.js";
 import { defaultRuntime } from "../../runtime.js";
 import { formatDocsLink } from "../../terminal/links.js";
 import { theme } from "../../terminal/theme.js";
@@ -37,6 +38,50 @@ function resolveInstallDaemonFlag(
   return undefined;
 }
 
+const STATIC_AUTH_CHOICES = [
+  "setup-token",
+  "chutes",
+  "xai-api-key",
+  "qianfan-api-key",
+  "openrouter-api-key",
+  "ai-gateway-api-key",
+  "cloudflare-ai-gateway-api-key",
+  "moonshot-api-key",
+  "moonshot-api-key-cn",
+  "kimi-code-api-key",
+  "synthetic-api-key",
+  "venice-api-key",
+  "gemini-api-key",
+  "zai-api-key",
+  "xiaomi-api-key",
+  "minimax-api",
+  "minimax-api-lightning",
+  "opencode-zen",
+  "skip",
+];
+
+function buildAuthChoiceHelp(): string {
+  const seen = new Set<string>();
+  const ordered: string[] = [];
+  const push = (choice: string) => {
+    if (!choice || seen.has(choice)) {
+      return;
+    }
+    seen.add(choice);
+    ordered.push(choice);
+  };
+
+  push("setup-token");
+  for (const entry of listProviderAuthChoices()) {
+    push(entry.choice);
+  }
+  for (const choice of STATIC_AUTH_CHOICES) {
+    push(choice);
+  }
+
+  return `Auth: ${ordered.join("|")}`;
+}
+
 export function registerOnboardCommand(program: Command) {
   program
     .command("onboard")
@@ -56,10 +101,7 @@ export function registerOnboardCommand(program: Command) {
     )
     .option("--flow <flow>", "Wizard flow: quickstart|advanced|manual")
     .option("--mode <mode>", "Wizard mode: local|remote")
-    .option(
-      "--auth-choice <choice>",
-      "Auth: setup-token|token|chutes|openai-codex|openai-api-key|xai-api-key|qianfan-api-key|openrouter-api-key|ai-gateway-api-key|cloudflare-ai-gateway-api-key|moonshot-api-key|moonshot-api-key-cn|kimi-code-api-key|synthetic-api-key|venice-api-key|gemini-api-key|zai-api-key|xiaomi-api-key|apiKey|minimax-api|minimax-api-lightning|opencode-zen|skip",
-    )
+    .option("--auth-choice <choice>", buildAuthChoiceHelp())
     .option(
       "--token-provider <id>",
       "Token provider id (non-interactive; used with --auth-choice token)",
