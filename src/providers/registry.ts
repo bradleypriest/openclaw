@@ -18,6 +18,7 @@ export type ProviderAuthChoiceEntry = {
   groupId: string;
   groupLabel: string;
   groupHint?: string;
+  handlerId?: string;
   interactiveOnly?: boolean;
   selectable?: boolean;
 };

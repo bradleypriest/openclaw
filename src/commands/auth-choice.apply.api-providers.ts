@@ -1,18 +1,12 @@
 import type { ApplyAuthChoiceParams, ApplyAuthChoiceResult } from "./auth-choice.apply.js";
-import {
-  ensureAuthProfileStore,
-  resolveAuthProfileOrder,
-  upsertAuthProfile,
-} from "../agents/auth-profiles.js";
+import { ensureAuthProfileStore, resolveAuthProfileOrder } from "../agents/auth-profiles.js";
 import { resolveEnvApiKey } from "../agents/model-auth.js";
-import { upsertSharedEnvVar } from "../infra/env-file.js";
 import {
   formatApiKeyPreview,
   normalizeApiKeyInput,
   validateApiKeyInput,
 } from "./auth-choice.api-key.js";
 import { applyDefaultModelChoice } from "./auth-choice.default-model.js";
-import { buildTokenProfileId, validateAnthropicSetupToken } from "./auth-token.js";
 import {
   applyGoogleGeminiModelDefault,
   GOOGLE_GEMINI_DEFAULT_MODEL,
@@ -51,7 +45,6 @@ import {
   VENICE_DEFAULT_MODEL_REF,
   VERCEL_AI_GATEWAY_DEFAULT_MODEL_REF,
   XIAOMI_DEFAULT_MODEL_REF,
-  setAnthropicApiKey,
   setCloudflareAiGatewayConfig,
   setQianfanApiKey,
   setGeminiApiKey,
@@ -66,11 +59,6 @@ import {
   setZaiApiKey,
   ZAI_DEFAULT_MODEL_REF,
 } from "./onboard-auth.js";
-import {
-  applyOpenAIConfig,
-  applyOpenAIProviderConfig,
-  OPENAI_DEFAULT_MODEL,
-} from "./openai-model-default.js";
 import { OPENCODE_ZEN_DEFAULT_MODEL } from "./opencode-zen-model-default.js";
 
 export async function applyAuthChoiceApiProviders(
@@ -89,12 +77,6 @@ export async function applyAuthChoiceApiProviders(
   };
 
   let authChoice = params.authChoice;
-  if (authChoice === "oauth" || authChoice === "setup-token") {
-    authChoice = "token";
-  }
-  if (authChoice === "apiKey" && params.opts?.tokenProvider === "openai") {
-    authChoice = "openai-api-key";
-  }
   if (
     authChoice === "apiKey" &&
     params.opts?.tokenProvider &&
@@ -129,156 +111,6 @@ export async function applyAuthChoiceApiProviders(
     } else if (params.opts.tokenProvider === "qianfan") {
       authChoice = "qianfan-api-key";
     }
-  }
-
-  if (authChoice === "token") {
-    await params.prompter.note(
-      ["Run `claude setup-token` in your terminal.", "Then paste the generated token below."].join(
-        "\n",
-      ),
-      "Anthropic setup-token",
-    );
-
-    const tokenRaw = await params.prompter.text({
-      message: "Paste Anthropic setup-token",
-      validate: (value) => validateAnthropicSetupToken(String(value ?? "")),
-    });
-    const token = String(tokenRaw).trim();
-
-    const profileNameRaw = await params.prompter.text({
-      message: "Token name (blank = default)",
-      placeholder: "default",
-    });
-    const provider = "anthropic";
-    const namedProfileId = buildTokenProfileId({
-      provider,
-      name: String(profileNameRaw ?? ""),
-    });
-
-    upsertAuthProfile({
-      profileId: namedProfileId,
-      agentDir: params.agentDir,
-      credential: {
-        type: "token",
-        provider,
-        token,
-      },
-    });
-
-    nextConfig = applyAuthProfileConfig(nextConfig, {
-      profileId: namedProfileId,
-      provider,
-      mode: "token",
-    });
-    return { config: nextConfig };
-  }
-
-  if (authChoice === "apiKey") {
-    if (params.opts?.tokenProvider && params.opts.tokenProvider !== "anthropic") {
-      return null;
-    }
-
-    let hasCredential = false;
-    const envKey = process.env.ANTHROPIC_API_KEY?.trim();
-
-    if (params.opts?.token) {
-      await setAnthropicApiKey(normalizeApiKeyInput(params.opts.token), params.agentDir);
-      hasCredential = true;
-    }
-
-    if (!hasCredential && envKey) {
-      const useExisting = await params.prompter.confirm({
-        message: `Use existing ANTHROPIC_API_KEY (env, ${formatApiKeyPreview(envKey)})?`,
-        initialValue: true,
-      });
-      if (useExisting) {
-        await setAnthropicApiKey(envKey, params.agentDir);
-        hasCredential = true;
-      }
-    }
-    if (!hasCredential) {
-      const key = await params.prompter.text({
-        message: "Enter Anthropic API key",
-        validate: validateApiKeyInput,
-      });
-      await setAnthropicApiKey(normalizeApiKeyInput(String(key)), params.agentDir);
-    }
-    nextConfig = applyAuthProfileConfig(nextConfig, {
-      profileId: "anthropic:default",
-      provider: "anthropic",
-      mode: "api_key",
-    });
-    return { config: nextConfig };
-  }
-
-  if (authChoice === "openai-api-key") {
-    const envKey = resolveEnvApiKey("openai");
-    if (envKey) {
-      const useExisting = await params.prompter.confirm({
-        message: `Use existing OPENAI_API_KEY (${envKey.source}, ${formatApiKeyPreview(envKey.apiKey)})?`,
-        initialValue: true,
-      });
-      if (useExisting) {
-        const result = upsertSharedEnvVar({
-          key: "OPENAI_API_KEY",
-          value: envKey.apiKey,
-        });
-        if (!process.env.OPENAI_API_KEY) {
-          process.env.OPENAI_API_KEY = envKey.apiKey;
-        }
-        await params.prompter.note(
-          `Copied OPENAI_API_KEY to ${result.path} for launchd compatibility.`,
-          "OpenAI API key",
-        );
-        const applied = await applyDefaultModelChoice({
-          config: nextConfig,
-          setDefaultModel: params.setDefaultModel,
-          defaultModel: OPENAI_DEFAULT_MODEL,
-          applyDefaultConfig: applyOpenAIConfig,
-          applyProviderConfig: applyOpenAIProviderConfig,
-          noteDefault: OPENAI_DEFAULT_MODEL,
-          noteAgentModel,
-          prompter: params.prompter,
-        });
-        nextConfig = applied.config;
-        agentModelOverride = applied.agentModelOverride ?? agentModelOverride;
-        return { config: nextConfig, agentModelOverride };
-      }
-    }
-
-    let key: string | undefined;
-    if (params.opts?.token && params.opts?.tokenProvider === "openai") {
-      key = params.opts.token;
-    } else {
-      key = await params.prompter.text({
-        message: "Enter OpenAI API key",
-        validate: validateApiKeyInput,
-      });
-    }
-
-    const trimmed = normalizeApiKeyInput(String(key));
-    const result = upsertSharedEnvVar({
-      key: "OPENAI_API_KEY",
-      value: trimmed,
-    });
-    process.env.OPENAI_API_KEY = trimmed;
-    await params.prompter.note(
-      `Saved OPENAI_API_KEY to ${result.path} for launchd compatibility.`,
-      "OpenAI API key",
-    );
-    const applied = await applyDefaultModelChoice({
-      config: nextConfig,
-      setDefaultModel: params.setDefaultModel,
-      defaultModel: OPENAI_DEFAULT_MODEL,
-      applyDefaultConfig: applyOpenAIConfig,
-      applyProviderConfig: applyOpenAIProviderConfig,
-      noteDefault: OPENAI_DEFAULT_MODEL,
-      noteAgentModel,
-      prompter: params.prompter,
-    });
-    nextConfig = applied.config;
-    agentModelOverride = applied.agentModelOverride ?? agentModelOverride;
-    return { config: nextConfig, agentModelOverride };
   }
 
   if (authChoice === "openrouter-api-key") {

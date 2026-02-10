@@ -64,6 +64,19 @@ type ProviderRegistration = {
     authChoiceAliases?: Record<string, AuthChoice>;
   };
 };
+
+type AuthChoiceEntry = {
+  choice: string;
+  providerId: string;
+  label: string;
+  hint?: string;
+  groupId: string;
+  groupLabel: string;
+  groupHint?: string;
+  handlerId?: string;
+  interactiveOnly?: boolean;
+  selectable?: boolean;
+};
 ```
 
 ## Config Patch Constraints

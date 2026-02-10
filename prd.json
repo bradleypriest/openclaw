@@ -95,7 +95,7 @@
       "priority": 9,
       "passes": true,
       "acceptanceCriteria": [
-        "OpenAI/Anthropic auth-choice logic lives in shared handlers",
+        "OpenAI/Anthropic auth-choice logic runs via registry handler ids",
         "Dedicated apply modules removed",
         "Auth choice tests remain green"
       ]

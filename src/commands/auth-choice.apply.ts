@@ -10,6 +10,7 @@ import { applyAuthChoiceGoogleGeminiCli } from "./auth-choice.apply.google-gemin
 import { applyAuthChoiceMiniMax } from "./auth-choice.apply.minimax.js";
 import { applyAuthChoiceOAuth } from "./auth-choice.apply.oauth.js";
 import { applyAuthChoiceQwenPortal } from "./auth-choice.apply.qwen-portal.js";
+import { applyRegistryAuthChoice } from "./auth-choice.apply.registry.js";
 import { applyAuthChoiceXAI } from "./auth-choice.apply.xai.js";
 
 export type ApplyAuthChoiceParams = {
@@ -38,6 +39,10 @@ export type ApplyAuthChoiceResult = {
 export async function applyAuthChoice(
   params: ApplyAuthChoiceParams,
 ): Promise<ApplyAuthChoiceResult> {
+  const registryResult = await applyRegistryAuthChoice(params);
+  if (registryResult) {
+    return registryResult;
+  }
   const handlers: Array<(p: ApplyAuthChoiceParams) => Promise<ApplyAuthChoiceResult | null>> = [
     applyAuthChoiceOAuth,
     applyAuthChoiceApiProviders,

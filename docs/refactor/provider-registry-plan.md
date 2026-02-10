@@ -80,7 +80,7 @@ Build a unified provider registry on top of `origin/main` that keeps plugin prov
 
 ### Phase 3.7: Auth choice handler consolidation
 
-- Move OpenAI/Anthropic auth-choice execution into shared handlers.
+- Drive OpenAI/Anthropic auth-choice execution from registry handler ids.
 - Remove the dedicated OpenAI/Anthropic apply modules.
 - Keep behavior identical with targeted auth-choice tests.
 
