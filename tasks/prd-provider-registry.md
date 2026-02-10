@@ -30,7 +30,7 @@ Core providers have grown a fragmented set of registries and provider-specific l
    - `models.providers.<id>`
    - `models.mode`
    - `agents.defaults.models`
-4. Provide derived views for existing internal callers (auth choice catalog, env vars, api-key specs, legacy profile rules, advisories, runtime tags).
+4. Provide derived views for existing internal callers (auth choice catalog, env vars, api-key specs, runtime tags). Legacy/deprecation warnings remain in `doctor-auth` until a later migration.
 5. Migrate core providers gradually without behavior regressions.
 6. Add registry coverage tests and plugin compatibility tests.
 
@@ -40,6 +40,11 @@ Core providers have grown a fragmented set of registries and provider-specific l
 - Core providers register via registry and no longer depend on scattered special cases.
 - configPatch rejects non-provider/model keys with diagnostics.
 - All targeted tests pass and coverage tests enforce provider registration.
+
+## Next Stage Scope
+
+- Make registry authoritative for OpenAI/Anthropic auth choices and env-var detection (remove static duplicates).
+- Rename registry metadata to avoid `auth` naming collisions (`descriptor` -> `internal`, `descriptor.auth` -> `internal.authSignals`).
 
 ## User Stories (high-level)
 

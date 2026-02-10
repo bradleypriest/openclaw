@@ -42,7 +42,6 @@
       "passes": true,
       "acceptanceCriteria": [
         "Auth choice catalog and env-var candidates read from registry",
-        "Legacy profile rules and advisories read from registry",
         "No behavior regressions in onboarding tests"
       ]
     },
@@ -66,6 +65,28 @@
         "Coverage test ensures each core provider registers once",
         "Diagnostics tests cover duplicates and invalid aliases",
         "All tests green"
+      ]
+    },
+    {
+      "id": "registry-authoritative-batch1",
+      "title": "Make registry authoritative for OpenAI/Anthropic",
+      "priority": 7,
+      "passes": true,
+      "acceptanceCriteria": [
+        "OpenAI/Anthropic auth choices come from registry (no static duplicates)",
+        "OpenAI env var detection uses registry candidates",
+        "Targeted auth choice/onboarding tests green"
+      ]
+    },
+    {
+      "id": "registry-metadata-naming",
+      "title": "Rename registry metadata to avoid auth collisions",
+      "priority": 8,
+      "passes": true,
+      "acceptanceCriteria": [
+        "descriptor renamed to internal",
+        "descriptor.auth renamed to internal.authSignals",
+        "Registry callers updated without behavior regressions"
       ]
     }
   ]

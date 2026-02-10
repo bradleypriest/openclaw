@@ -150,19 +150,26 @@ export function buildAuthChoiceOptions(params: {
 }): AuthChoiceOption[] {
   void params.store;
   const options: AuthChoiceOption[] = [];
+  const registryEntries = listProviderAuthChoices();
+  const registryByChoice = new Map<AuthChoice, AuthChoiceOption>();
+  for (const entry of registryEntries) {
+    registryByChoice.set(entry.choice as AuthChoice, {
+      value: entry.choice as AuthChoice,
+      label: entry.label,
+      hint: entry.hint,
+    });
+  }
+  const pushRegistryChoice = (choice: AuthChoice) => {
+    const option = registryByChoice.get(choice);
+    if (option) {
+      options.push(option);
+    }
+  };
 
-  options.push({
-    value: "token",
-    label: "Anthropic token (paste setup-token)",
-    hint: "run `claude setup-token` elsewhere, then paste the token here",
-  });
-
-  options.push({
-    value: "openai-codex",
-    label: "OpenAI Codex (ChatGPT OAuth)",
-  });
+  pushRegistryChoice("token");
+  pushRegistryChoice("openai-codex");
   options.push({ value: "chutes", label: "Chutes (OAuth)" });
-  options.push({ value: "openai-api-key", label: "OpenAI API key" });
+  pushRegistryChoice("openai-api-key");
   options.push({ value: "xai-api-key", label: "xAI (Grok) API key" });
   options.push({
     value: "qianfan-api-key",
@@ -225,7 +232,7 @@ export function buildAuthChoiceOptions(params: {
     label: "Copilot Proxy (local)",
     hint: "Local proxy for VS Code Copilot models",
   });
-  options.push({ value: "apiKey", label: "Anthropic API key" });
+  pushRegistryChoice("apiKey");
   // Token flow is currently Anthropic-only; use CLI for advanced providers.
   options.push({
     value: "opencode-zen",
@@ -243,7 +250,7 @@ export function buildAuthChoiceOptions(params: {
   }
 
   const existing = new Set<AuthChoice>(options.map((opt) => opt.value));
-  for (const entry of listProviderAuthChoices()) {
+  for (const entry of registryEntries) {
     if (entry.selectable === false) {
       continue;
     }

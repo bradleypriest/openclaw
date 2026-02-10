@@ -22,11 +22,13 @@ export type ProviderAuthChoiceEntry = {
   selectable?: boolean;
 };
 
-export type ProviderDescriptor = {
-  auth?: {
-    defaultMode?: "aws-sdk";
-    envVarCandidates?: string[];
-  };
+export type ProviderAuthSignals = {
+  defaultMode?: "aws-sdk";
+  envVarCandidates?: string[];
+};
+
+export type ProviderInternal = {
+  authSignals?: ProviderAuthSignals;
   runtime?: {
     tags?: string[];
   };
@@ -53,7 +55,7 @@ export type ProviderRegistration = {
   auth?: ProviderAuthMethod[];
   defaultModel?: string;
   configPatch?: Partial<OpenClawConfig>;
-  descriptor?: ProviderDescriptor;
+  internal?: ProviderInternal;
   authChoices?: ProviderAuthChoiceEntry[];
   advisories?: ProviderAdvisories;
 };
@@ -70,13 +72,13 @@ export function ensureCoreProvidersRegistered(): void {
 
 export function registerPluginProvider(provider: ProviderPlugin): void {
   const envVarCandidates = provider.envVars?.filter((envVar) => envVar.trim());
-  const descriptor = envVarCandidates?.length ? { auth: { envVarCandidates } } : undefined;
+  const internal = envVarCandidates?.length ? { authSignals: { envVarCandidates } } : undefined;
   registerProvider({
     id: provider.id,
     label: provider.label,
     aliases: provider.aliases,
     auth: provider.auth,
-    descriptor,
+    internal,
   });
 }
 
@@ -94,7 +96,7 @@ export function listProviderAuthChoices(): ProviderAuthChoiceEntry[] {
 export function resolveProviderEnvVarCandidates(providerId: string): string[] {
   ensureCoreProvidersRegistered();
   const provider = resolveProvider(providerId);
-  const envVars = provider?.descriptor?.auth?.envVarCandidates ?? [];
+  const envVars = provider?.internal?.authSignals?.envVarCandidates ?? [];
   return envVars.map((envVar) => envVar.trim()).filter(Boolean);
 }
 

@@ -36,8 +36,8 @@ type ProviderRegistration = {
   configPatch?: ProviderConfigPatch;
 
   // Core only metadata
-  descriptor?: {
-    auth?: {
+  internal?: {
+    authSignals?: {
       defaultMode?: "aws-sdk";
       envVarCandidates?: string[];
     };

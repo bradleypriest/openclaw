@@ -260,10 +260,6 @@ export function resolveEnvApiKey(provider: string): EnvApiKeyResult | null {
     return pick("COPILOT_GITHUB_TOKEN") ?? pick("GH_TOKEN") ?? pick("GITHUB_TOKEN");
   }
 
-  if (normalized === "anthropic") {
-    return pick("ANTHROPIC_OAUTH_TOKEN") ?? pick("ANTHROPIC_API_KEY");
-  }
-
   if (normalized === "chutes") {
     return pick("CHUTES_OAUTH_TOKEN") ?? pick("CHUTES_API_KEY");
   }
@@ -297,7 +293,6 @@ export function resolveEnvApiKey(provider: string): EnvApiKeyResult | null {
   }
 
   const envMap: Record<string, string> = {
-    openai: "OPENAI_API_KEY",
     google: "GEMINI_API_KEY",
     voyage: "VOYAGE_API_KEY",
     groq: "GROQ_API_KEY",

@@ -16,8 +16,8 @@ export function registerCoreProviders(): void {
   registerProvider({
     id: "openai",
     label: "OpenAI",
-    descriptor: {
-      auth: {
+    internal: {
+      authSignals: {
         envVarCandidates: ["OPENAI_API_KEY"],
       },
     },
@@ -47,8 +47,8 @@ export function registerCoreProviders(): void {
   registerProvider({
     id: "anthropic",
     label: "Anthropic",
-    descriptor: {
-      auth: {
+    internal: {
+      authSignals: {
         envVarCandidates: ["ANTHROPIC_OAUTH_TOKEN", "ANTHROPIC_API_KEY"],
       },
     },

@@ -67,6 +67,17 @@ Build a unified provider registry on top of `origin/main` that keeps plugin prov
   - update derived views to read from registry
 - Validate onboarding + auth flows with targeted tests.
 
+### Phase 3.5: Registry authoritative for migrated providers
+
+- Remove OpenAI/Anthropic auth choices from the static catalog and group defs.
+- Remove OpenAI env var fallback mapping so env-var detection comes from registry.
+- Update tests to ensure no duplicate choices and onboarding remains stable.
+
+### Phase 3.6: Metadata naming cleanup
+
+- Rename `descriptor` to `internal` and `descriptor.auth` to `internal.authSignals`.
+- Update core provider registrations and derived views to use the new naming.
+
 ### Phase 4: Core provider migration (batch 2)
 
 - Migrate remaining built-in providers in groups:
