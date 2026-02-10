@@ -25,10 +25,38 @@ type AuthChoiceFlagOptions = Pick<
   | "xaiApiKey"
 >;
 
+const resolveRegistryAuthChoice = (params: {
+  providerId: string;
+  handlerId: string;
+  fallback: AuthChoice;
+}): AuthChoice => {
+  const entries = listProviderAuthChoices();
+  const match = entries.find(
+    (entry) => entry.providerId === params.providerId && entry.handlerId === params.handlerId,
+  );
+  return match?.choice ?? params.fallback;
+};
+
 const AUTH_CHOICE_FLAG_MAP = [
-  { flag: "anthropicApiKey", authChoice: "apiKey", label: "--anthropic-api-key" },
+  {
+    flag: "anthropicApiKey",
+    authChoice: resolveRegistryAuthChoice({
+      providerId: "anthropic",
+      handlerId: "anthropic-api-key",
+      fallback: "apiKey",
+    }),
+    label: "--anthropic-api-key",
+  },
   { flag: "geminiApiKey", authChoice: "gemini-api-key", label: "--gemini-api-key" },
-  { flag: "openaiApiKey", authChoice: "openai-api-key", label: "--openai-api-key" },
+  {
+    flag: "openaiApiKey",
+    authChoice: resolveRegistryAuthChoice({
+      providerId: "openai",
+      handlerId: "openai-api-key",
+      fallback: "openai-api-key",
+    }),
+    label: "--openai-api-key",
+  },
   { flag: "openrouterApiKey", authChoice: "openrouter-api-key", label: "--openrouter-api-key" },
   { flag: "aiGatewayApiKey", authChoice: "ai-gateway-api-key", label: "--ai-gateway-api-key" },
   {
@@ -67,3 +95,4 @@ export function inferAuthChoiceFromFlags(opts: OnboardOptions): AuthChoiceInfere
     matches,
   };
 }
+import { listProviderAuthChoices } from "../../../providers/registry.js";
