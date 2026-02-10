@@ -15,3 +15,4 @@ Provider Registry Ralph Loop
 - Allowed registry auth choices in onboarding types.
 - Derived preferred provider mapping from registry entries.
 - Resolved OpenAI/Anthropic env var names from registry in non-interactive onboarding.
+- Routed non-interactive OpenAI/Anthropic auth choices through registry handlers.
