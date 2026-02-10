@@ -1,15 +1,12 @@
 import type { AuthChoice } from "./onboard-types.js";
+import { listProviderAuthChoices } from "../providers/registry.js";
 
 const PREFERRED_PROVIDER_BY_AUTH_CHOICE: Partial<Record<AuthChoice, string>> = {
   oauth: "anthropic",
   "setup-token": "anthropic",
   "claude-cli": "anthropic",
-  token: "anthropic",
-  apiKey: "anthropic",
-  "openai-codex": "openai-codex",
   "codex-cli": "openai-codex",
   chutes: "chutes",
-  "openai-api-key": "openai",
   "openrouter-api-key": "openrouter",
   "ai-gateway-api-key": "vercel-ai-gateway",
   "cloudflare-ai-gateway-api-key": "cloudflare-ai-gateway",
@@ -37,5 +34,9 @@ const PREFERRED_PROVIDER_BY_AUTH_CHOICE: Partial<Record<AuthChoice, string>> = {
 };
 
 export function resolvePreferredProviderForAuthChoice(choice: AuthChoice): string | undefined {
+  const registryMatch = listProviderAuthChoices().find((entry) => entry.choice === choice);
+  if (registryMatch?.providerId) {
+    return registryMatch.providerId;
+  }
   return PREFERRED_PROVIDER_BY_AUTH_CHOICE[choice];
 }

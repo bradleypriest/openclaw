@@ -13,3 +13,4 @@ Provider Registry Ralph Loop
 - Routed OpenAI/Anthropic auth-choice handling through registry handlers.
 - Derived CLI auth-choice help and group membership from registry entries.
 - Allowed registry auth choices in onboarding types.
+- Derived preferred provider mapping from registry entries.
