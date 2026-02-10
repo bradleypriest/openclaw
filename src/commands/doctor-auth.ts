@@ -15,15 +15,13 @@ import {
 } from "../agents/auth-profiles.js";
 import { updateAuthProfileStoreWithLock } from "../agents/auth-profiles/store.js";
 import { formatCliCommand } from "../cli/command-format.js";
-import { resolveProviderLegacyProfiles } from "../providers/registry.js";
 import { note } from "../terminal/note.js";
 
 export async function maybeRepairAnthropicOAuthProfileId(
   cfg: OpenClawConfig,
   prompter: DoctorPrompter,
 ): Promise<OpenClawConfig> {
-  const legacyDefaultProfileId =
-    resolveProviderLegacyProfiles("anthropic")?.defaultOAuthProfileId ?? "anthropic:default";
+  const legacyDefaultProfileId = "anthropic:default";
   const store = ensureAuthProfileStore();
   const repair = repairOAuthProfileIdMismatch({
     cfg,
@@ -117,10 +115,8 @@ export async function maybeRemoveDeprecatedCliAuthProfiles(
   prompter: DoctorPrompter,
 ): Promise<OpenClawConfig> {
   const store = ensureAuthProfileStore(undefined, { allowKeychainPrompt: false });
-  const anthropicLegacy = resolveProviderLegacyProfiles("anthropic");
-  const openaiLegacy = resolveProviderLegacyProfiles("openai-codex");
-  const anthropicDeprecated = anthropicLegacy?.deprecatedProfileIds ?? [CLAUDE_CLI_PROFILE_ID];
-  const openaiDeprecated = openaiLegacy?.deprecatedProfileIds ?? [CODEX_CLI_PROFILE_ID];
+  const anthropicDeprecated = [CLAUDE_CLI_PROFILE_ID];
+  const openaiDeprecated = [CODEX_CLI_PROFILE_ID];
   const deprecated = new Set<string>();
   for (const id of anthropicDeprecated) {
     if (store.profiles[id] || cfg.auth?.profiles?.[id]) {
@@ -224,10 +220,8 @@ type AuthIssue = {
 };
 
 function formatAuthIssueHint(issue: AuthIssue): string | null {
-  const anthropicLegacy = resolveProviderLegacyProfiles("anthropic");
-  const openaiLegacy = resolveProviderLegacyProfiles("openai-codex");
-  const anthropicDeprecated = anthropicLegacy?.deprecatedProfileIds ?? [CLAUDE_CLI_PROFILE_ID];
-  const openaiDeprecated = openaiLegacy?.deprecatedProfileIds ?? [CODEX_CLI_PROFILE_ID];
+  const anthropicDeprecated = [CLAUDE_CLI_PROFILE_ID];
+  const openaiDeprecated = [CODEX_CLI_PROFILE_ID];
   if (issue.provider === "anthropic" && anthropicDeprecated.includes(issue.profileId)) {
     return `Deprecated profile. Use ${formatCliCommand("openclaw models auth setup-token")} or ${formatCliCommand(
       "openclaw configure",
