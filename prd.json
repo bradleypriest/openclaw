@@ -88,6 +88,17 @@
         "descriptor.auth renamed to internal.authSignals",
         "Registry callers updated without behavior regressions"
       ]
+    },
+    {
+      "id": "auth-choice-handler-migration",
+      "title": "Consolidate OpenAI/Anthropic auth-choice handlers",
+      "priority": 9,
+      "passes": true,
+      "acceptanceCriteria": [
+        "OpenAI/Anthropic auth-choice logic lives in shared handlers",
+        "Dedicated apply modules removed",
+        "Auth choice tests remain green"
+      ]
     }
   ]
 }

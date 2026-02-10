@@ -45,6 +45,7 @@ Core providers have grown a fragmented set of registries and provider-specific l
 
 - Make registry authoritative for OpenAI/Anthropic auth choices and env-var detection (remove static duplicates).
 - Rename registry metadata to avoid `auth` naming collisions (`descriptor` -> `internal`, `descriptor.auth` -> `internal.authSignals`).
+- Consolidate OpenAI/Anthropic auth-choice handlers into shared flows and remove dedicated apply modules.
 
 ## User Stories (high-level)
 

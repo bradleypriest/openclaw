@@ -10,3 +10,4 @@ Provider Registry Ralph Loop
 - Removed legacy profile metadata from the provider registry.
 - Made registry authoritative for OpenAI/Anthropic auth choices and env vars.
 - Renamed provider metadata to internal auth signals.
+- Consolidated OpenAI/Anthropic auth-choice handling into shared handlers.

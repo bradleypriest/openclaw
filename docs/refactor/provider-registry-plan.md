@@ -78,6 +78,12 @@ Build a unified provider registry on top of `origin/main` that keeps plugin prov
 - Rename `descriptor` to `internal` and `descriptor.auth` to `internal.authSignals`.
 - Update core provider registrations and derived views to use the new naming.
 
+### Phase 3.7: Auth choice handler consolidation
+
+- Move OpenAI/Anthropic auth-choice execution into shared handlers.
+- Remove the dedicated OpenAI/Anthropic apply modules.
+- Keep behavior identical with targeted auth-choice tests.
+
 ### Phase 4: Core provider migration (batch 2)
 
 - Migrate remaining built-in providers in groups:
