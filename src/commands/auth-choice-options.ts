@@ -44,13 +44,13 @@ const AUTH_CHOICE_GROUP_DEFS: {
     value: "openai",
     label: "OpenAI",
     hint: "Codex OAuth + API key",
-    choices: ["openai-codex", "openai-api-key"],
+    choices: [],
   },
   {
     value: "anthropic",
     label: "Anthropic",
     hint: "setup-token + API key",
-    choices: ["token", "apiKey"],
+    choices: [],
   },
   {
     value: "minimax",
