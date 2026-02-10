@@ -8,7 +8,6 @@ import {
   resolveProviderAdvisories,
   resolveProvider,
   resolveProviderEnvVarCandidates,
-  resolveProviderLegacyProfiles,
   resetProviderRegistryForTests,
 } from "./registry.js";
 
@@ -147,20 +146,5 @@ describe("provider registry", () => {
 
     const advisory = resolveProviderAdvisories("acme");
     expect(advisory?.resolveMissingAuthHint?.()).toBe("Use ACME_API_KEY");
-  });
-
-  it("resolves provider legacy profiles", () => {
-    registerProvider({
-      id: "acme",
-      legacyProfiles: {
-        defaultOAuthProfileId: "acme:default",
-        deprecatedProfileIds: ["acme:legacy"],
-      },
-    });
-
-    expect(resolveProviderLegacyProfiles("acme")).toEqual({
-      defaultOAuthProfileId: "acme:default",
-      deprecatedProfileIds: ["acme:legacy"],
-    });
   });
 });

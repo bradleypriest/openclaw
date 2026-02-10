@@ -46,11 +46,6 @@ export type ProviderAdvisories = {
   resolveMissingAuthHint?: () => string | undefined;
 };
 
-export type ProviderLegacyProfiles = {
-  defaultOAuthProfileId?: string;
-  deprecatedProfileIds?: string[];
-};
-
 export type ProviderRegistration = {
   id: string;
   label?: string;
@@ -61,7 +56,6 @@ export type ProviderRegistration = {
   descriptor?: ProviderDescriptor;
   authChoices?: ProviderAuthChoiceEntry[];
   advisories?: ProviderAdvisories;
-  legacyProfiles?: ProviderLegacyProfiles;
 };
 
 let coreProvidersRegistered = false;
@@ -107,13 +101,6 @@ export function resolveProviderEnvVarCandidates(providerId: string): string[] {
 export function resolveProviderAdvisories(providerId: string): ProviderAdvisories | undefined {
   ensureCoreProvidersRegistered();
   return resolveProvider(providerId)?.advisories;
-}
-
-export function resolveProviderLegacyProfiles(
-  providerId: string,
-): ProviderLegacyProfiles | undefined {
-  ensureCoreProvidersRegistered();
-  return resolveProvider(providerId)?.legacyProfiles;
 }
 
 const providerRegistry = new Map<string, ProviderRegistration>();

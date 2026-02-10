@@ -1,4 +1,3 @@
-import { CLAUDE_CLI_PROFILE_ID, CODEX_CLI_PROFILE_ID } from "../agents/auth-profiles.js";
 import { registerProvider } from "./registry.js";
 
 const OPENAI_GROUP = {
@@ -43,10 +42,6 @@ export function registerCoreProviders(): void {
         ...OPENAI_GROUP,
       },
     ],
-    legacyProfiles: {
-      defaultOAuthProfileId: "openai-codex:default",
-      deprecatedProfileIds: [CODEX_CLI_PROFILE_ID],
-    },
   });
 
   registerProvider({
@@ -72,9 +67,5 @@ export function registerCoreProviders(): void {
         ...ANTHROPIC_GROUP,
       },
     ],
-    legacyProfiles: {
-      defaultOAuthProfileId: "anthropic:default",
-      deprecatedProfileIds: [CLAUDE_CLI_PROFILE_ID],
-    },
   });
 }
