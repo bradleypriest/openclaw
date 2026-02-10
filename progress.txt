@@ -14,3 +14,4 @@ Provider Registry Ralph Loop
 - Derived CLI auth-choice help and group membership from registry entries.
 - Allowed registry auth choices in onboarding types.
 - Derived preferred provider mapping from registry entries.
+- Resolved OpenAI/Anthropic env var names from registry in non-interactive onboarding.

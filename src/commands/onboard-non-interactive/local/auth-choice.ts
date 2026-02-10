@@ -5,6 +5,7 @@ import { upsertAuthProfile } from "../../../agents/auth-profiles.js";
 import { normalizeProviderId } from "../../../agents/model-selection.js";
 import { parseDurationMs } from "../../../cli/parse-duration.js";
 import { upsertSharedEnvVar } from "../../../infra/env-file.js";
+import { resolveProviderEnvVarCandidates } from "../../../providers/registry.js";
 import { shortenHomePath } from "../../../utils.js";
 import { normalizeSecretInput } from "../../../utils/normalize-secret-input.js";
 import { buildTokenProfileId, validateAnthropicSetupToken } from "../../auth-token.js";
@@ -78,12 +79,15 @@ export async function applyNonInteractiveAuthChoice(params: {
   }
 
   if (authChoice === "apiKey") {
+    const anthropicEnvVar =
+      resolveProviderEnvVarCandidates("anthropic").find((envVar) => envVar.includes("API_KEY")) ??
+      "ANTHROPIC_API_KEY";
     const resolved = await resolveNonInteractiveApiKey({
       provider: "anthropic",
       cfg: baseConfig,
       flagValue: opts.anthropicApiKey,
       flagName: "--anthropic-api-key",
-      envVar: "ANTHROPIC_API_KEY",
+      envVar: anthropicEnvVar,
       runtime,
     });
     if (!resolved) {
@@ -270,12 +274,13 @@ export async function applyNonInteractiveAuthChoice(params: {
   }
 
   if (authChoice === "openai-api-key") {
+    const openaiEnvVar = resolveProviderEnvVarCandidates("openai")[0] ?? "OPENAI_API_KEY";
     const resolved = await resolveNonInteractiveApiKey({
       provider: "openai",
       cfg: baseConfig,
       flagValue: opts.openaiApiKey,
       flagName: "--openai-api-key",
-      envVar: "OPENAI_API_KEY",
+      envVar: openaiEnvVar,
       runtime,
       allowProfile: false,
     });
