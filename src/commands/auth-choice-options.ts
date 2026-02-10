@@ -151,115 +151,130 @@ export function buildAuthChoiceOptions(params: {
   void params.store;
   const options: AuthChoiceOption[] = [];
   const registryEntries = listProviderAuthChoices();
-  const registryByChoice = new Map<AuthChoice, AuthChoiceOption>();
-  for (const entry of registryEntries) {
-    registryByChoice.set(entry.choice as AuthChoice, {
+  const groupOrder = new Map<string, number>(
+    AUTH_CHOICE_GROUP_DEFS.map((def, index) => [def.value, index]),
+  );
+  const knownGroups = new Set(groupOrder.keys());
+  const seen = new Set<AuthChoice>();
+  const pushOption = (option: AuthChoiceOption) => {
+    if (seen.has(option.value)) {
+      return;
+    }
+    options.push(option);
+    seen.add(option.value);
+  };
+
+  const prioritizedRegistry = registryEntries
+    .filter((entry) => knownGroups.has(entry.groupId))
+    .filter((entry) => entry.selectable !== false)
+    .toSorted((a, b) => {
+      const groupA = groupOrder.get(a.groupId) ?? Number.MAX_SAFE_INTEGER;
+      const groupB = groupOrder.get(b.groupId) ?? Number.MAX_SAFE_INTEGER;
+      if (groupA !== groupB) {
+        return groupA - groupB;
+      }
+      return a.label.localeCompare(b.label);
+    });
+  for (const entry of prioritizedRegistry) {
+    pushOption({
       value: entry.choice as AuthChoice,
       label: entry.label,
       hint: entry.hint,
     });
   }
-  const pushRegistryChoice = (choice: AuthChoice) => {
-    const option = registryByChoice.get(choice);
-    if (option) {
-      options.push(option);
-    }
-  };
 
-  pushRegistryChoice("token");
-  pushRegistryChoice("openai-codex");
-  options.push({ value: "chutes", label: "Chutes (OAuth)" });
-  pushRegistryChoice("openai-api-key");
-  options.push({ value: "xai-api-key", label: "xAI (Grok) API key" });
-  options.push({
+  pushOption({ value: "chutes", label: "Chutes (OAuth)" });
+  pushOption({ value: "xai-api-key", label: "xAI (Grok) API key" });
+  pushOption({
     value: "qianfan-api-key",
     label: "Qianfan API key",
   });
-  options.push({ value: "openrouter-api-key", label: "OpenRouter API key" });
-  options.push({
+  pushOption({ value: "openrouter-api-key", label: "OpenRouter API key" });
+  pushOption({
     value: "ai-gateway-api-key",
     label: "Vercel AI Gateway API key",
   });
-  options.push({
+  pushOption({
     value: "cloudflare-ai-gateway-api-key",
     label: "Cloudflare AI Gateway",
     hint: "Account ID + Gateway ID + API key",
   });
-  options.push({
+  pushOption({
     value: "moonshot-api-key",
     label: "Kimi API key (.ai)",
   });
-  options.push({
+  pushOption({
     value: "moonshot-api-key-cn",
     label: "Kimi API key (.cn)",
   });
-  options.push({ value: "kimi-code-api-key", label: "Kimi Code API key (subscription)" });
-  options.push({ value: "synthetic-api-key", label: "Synthetic API key" });
-  options.push({
+  pushOption({
+    value: "kimi-code-api-key",
+    label: "Kimi Code API key (subscription)",
+  });
+  pushOption({ value: "synthetic-api-key", label: "Synthetic API key" });
+  pushOption({
     value: "venice-api-key",
     label: "Venice AI API key",
     hint: "Privacy-focused inference (uncensored models)",
   });
-  options.push({
+  pushOption({
     value: "github-copilot",
     label: "GitHub Copilot (GitHub device login)",
     hint: "Uses GitHub device flow",
   });
-  options.push({ value: "gemini-api-key", label: "Google Gemini API key" });
-  options.push({
+  pushOption({ value: "gemini-api-key", label: "Google Gemini API key" });
+  pushOption({
     value: "google-antigravity",
     label: "Google Antigravity OAuth",
     hint: "Uses the bundled Antigravity auth plugin",
   });
-  options.push({
+  pushOption({
     value: "google-gemini-cli",
     label: "Google Gemini CLI OAuth",
     hint: "Uses the bundled Gemini CLI auth plugin",
   });
-  options.push({ value: "zai-api-key", label: "Z.AI (GLM 4.7) API key" });
-  options.push({
+  pushOption({ value: "zai-api-key", label: "Z.AI (GLM 4.7) API key" });
+  pushOption({
     value: "xiaomi-api-key",
     label: "Xiaomi API key",
   });
-  options.push({
+  pushOption({
     value: "minimax-portal",
     label: "MiniMax OAuth",
     hint: "Oauth plugin for MiniMax",
   });
-  options.push({ value: "qwen-portal", label: "Qwen OAuth" });
-  options.push({
+  pushOption({ value: "qwen-portal", label: "Qwen OAuth" });
+  pushOption({
     value: "copilot-proxy",
     label: "Copilot Proxy (local)",
     hint: "Local proxy for VS Code Copilot models",
   });
-  pushRegistryChoice("apiKey");
+  pushOption({ value: "apiKey", label: "Anthropic API key" });
   // Token flow is currently Anthropic-only; use CLI for advanced providers.
-  options.push({
+  pushOption({
     value: "opencode-zen",
     label: "OpenCode Zen (multi-model proxy)",
     hint: "Claude, GPT, Gemini via opencode.ai/zen",
   });
-  options.push({ value: "minimax-api", label: "MiniMax M2.1" });
-  options.push({
+  pushOption({ value: "minimax-api", label: "MiniMax M2.1" });
+  pushOption({
     value: "minimax-api-lightning",
     label: "MiniMax M2.1 Lightning",
     hint: "Faster, higher output cost",
   });
   if (params.includeSkip) {
-    options.push({ value: "skip", label: "Skip for now" });
+    pushOption({ value: "skip", label: "Skip for now" });
   }
 
-  const existing = new Set<AuthChoice>(options.map((opt) => opt.value));
   for (const entry of registryEntries) {
     if (entry.selectable === false) {
       continue;
     }
     const value = entry.choice as AuthChoice;
-    if (existing.has(value)) {
+    if (seen.has(value)) {
       continue;
     }
-    options.push({ value, label: entry.label, hint: entry.hint });
-    existing.add(value);
+    pushOption({ value, label: entry.label, hint: entry.hint });
   }
 
   return options;
