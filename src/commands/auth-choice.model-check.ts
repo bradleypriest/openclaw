@@ -6,6 +6,7 @@ import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../agents/defaults.js";
 import { getCustomProviderApiKey, resolveEnvApiKey } from "../agents/model-auth.js";
 import { loadModelCatalog } from "../agents/model-catalog.js";
 import { resolveConfiguredModelRef } from "../agents/model-selection.js";
+import { resolveProviderAdvisories } from "../providers/registry.js";
 import { OPENAI_CODEX_DEFAULT_MODEL } from "./openai-codex-model-default.js";
 
 export async function warnIfModelConfigLooksOff(
@@ -60,12 +61,19 @@ export async function warnIfModelConfigLooksOff(
   const envKey = resolveEnvApiKey(ref.provider);
   const customKey = getCustomProviderApiKey(config, ref.provider);
   if (!hasProfile && !envKey && !customKey) {
+    const advisory = resolveProviderAdvisories(ref.provider)?.resolveMissingAuthHint?.();
     warnings.push(
-      `No auth configured for provider "${ref.provider}". The agent may fail until credentials are added.`,
+      advisory ??
+        `No auth configured for provider "${ref.provider}". The agent may fail until credentials are added.`,
     );
   }
 
-  if (ref.provider === "openai") {
+  const advisoryWarning = resolveProviderAdvisories(ref.provider)?.resolveModelConfigWarning?.(
+    store,
+  );
+  if (advisoryWarning) {
+    warnings.push(advisoryWarning);
+  } else if (ref.provider === "openai") {
     const hasCodex = listProfilesForProvider(store, "openai-codex").length > 0;
     if (hasCodex) {
       warnings.push(

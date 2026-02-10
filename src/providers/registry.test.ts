@@ -2,9 +2,13 @@ import { beforeEach, describe, expect, it } from "vitest";
 import {
   listProviderRegistryDiagnostics,
   listProviders,
+  listProviderAuthChoices,
   registerProvider,
   registerPluginProvider,
+  resolveProviderAdvisories,
   resolveProvider,
+  resolveProviderEnvVarCandidates,
+  resolveProviderLegacyProfiles,
   resetProviderRegistryForTests,
 } from "./registry.js";
 
@@ -50,6 +54,18 @@ describe("provider registry", () => {
     expect(resolved?.configPatch).toBeUndefined();
   });
 
+  it("warns on invalid aliases", () => {
+    registerProvider({
+      id: "openai",
+      aliases: ["", "OpenAI", "alias", "alias"],
+    });
+
+    const diagnostics = listProviderRegistryDiagnostics();
+    expect(diagnostics.some((diag) => diag.level === "warn")).toBe(true);
+    expect(diagnostics[0]?.message).toContain("provider alias invalid");
+    expect(resolveProvider("openai")?.aliases).toEqual(["alias"]);
+  });
+
   it("accepts allowed configPatch keys", () => {
     registerProvider({
       id: "openai",
@@ -90,5 +106,61 @@ describe("provider registry", () => {
     expect(resolved?.id).toBe("acme");
     expect(resolved?.label).toBe("AcmeAI");
     expect(resolved?.auth).toHaveLength(1);
+  });
+
+  it("exposes auth choice entries from registry", () => {
+    registerProvider({
+      id: "acme",
+      authChoices: [
+        {
+          choice: "acme-auth",
+          providerId: "acme",
+          label: "Acme Auth",
+          groupId: "openai",
+          groupLabel: "OpenAI",
+        },
+      ],
+    });
+
+    const entries = listProviderAuthChoices();
+    expect(entries.some((entry) => entry.choice === "acme-auth")).toBe(true);
+  });
+
+  it("maps plugin env vars into provider env var candidates", () => {
+    registerPluginProvider({
+      id: "acme",
+      label: "AcmeAI",
+      envVars: ["ACME_API_KEY"],
+      auth: [],
+    });
+
+    expect(resolveProviderEnvVarCandidates("acme")).toEqual(["ACME_API_KEY"]);
+  });
+
+  it("resolves provider advisories", () => {
+    registerProvider({
+      id: "acme",
+      advisories: {
+        resolveMissingAuthHint: () => "Use ACME_API_KEY",
+      },
+    });
+
+    const advisory = resolveProviderAdvisories("acme");
+    expect(advisory?.resolveMissingAuthHint?.()).toBe("Use ACME_API_KEY");
+  });
+
+  it("resolves provider legacy profiles", () => {
+    registerProvider({
+      id: "acme",
+      legacyProfiles: {
+        defaultOAuthProfileId: "acme:default",
+        deprecatedProfileIds: ["acme:legacy"],
+      },
+    });
+
+    expect(resolveProviderLegacyProfiles("acme")).toEqual({
+      defaultOAuthProfileId: "acme:default",
+      deprecatedProfileIds: ["acme:legacy"],
+    });
   });
 });

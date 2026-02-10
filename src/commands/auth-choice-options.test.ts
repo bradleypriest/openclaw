@@ -1,8 +1,13 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import type { AuthProfileStore } from "../agents/auth-profiles.js";
-import { buildAuthChoiceOptions } from "./auth-choice-options.js";
+import { registerProvider, resetProviderRegistryForTests } from "../providers/registry.js";
+import { buildAuthChoiceGroups, buildAuthChoiceOptions } from "./auth-choice-options.js";
 
 describe("buildAuthChoiceOptions", () => {
+  beforeEach(() => {
+    resetProviderRegistryForTests();
+  });
+
   it("includes GitHub Copilot", () => {
     const store: AuthProfileStore = { version: 1, profiles: {} };
     const options = buildAuthChoiceOptions({
@@ -123,5 +128,52 @@ describe("buildAuthChoiceOptions", () => {
     });
 
     expect(options.some((opt) => opt.value === "xai-api-key")).toBe(true);
+  });
+
+  it("includes registry auth choices", () => {
+    registerProvider({
+      id: "acme",
+      authChoices: [
+        {
+          choice: "acme-auth",
+          providerId: "acme",
+          label: "Acme Auth",
+          groupId: "openai",
+          groupLabel: "OpenAI",
+        },
+      ],
+    });
+    const store: AuthProfileStore = { version: 1, profiles: {} };
+    const options = buildAuthChoiceOptions({
+      store,
+      includeSkip: false,
+    });
+
+    const values = options.map((opt) => String(opt.value));
+    expect(values).toContain("acme-auth");
+  });
+
+  it("groups registry auth choices", () => {
+    registerProvider({
+      id: "acme",
+      authChoices: [
+        {
+          choice: "acme-auth",
+          providerId: "acme",
+          label: "Acme Auth",
+          groupId: "openai",
+          groupLabel: "OpenAI",
+        },
+      ],
+    });
+    const store: AuthProfileStore = { version: 1, profiles: {} };
+    const { groups } = buildAuthChoiceGroups({
+      store,
+      includeSkip: false,
+    });
+
+    const openaiGroup = groups.find((group) => group.value === "openai");
+    const values = openaiGroup?.options.map((opt) => String(opt.value)) ?? [];
+    expect(values).toContain("acme-auth");
   });
 });

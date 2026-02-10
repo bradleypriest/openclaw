@@ -4,6 +4,7 @@ import type { OpenClawConfig } from "../config/config.js";
 import type { ModelProviderAuthMode, ModelProviderConfig } from "../config/types.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import { getShellEnvAppliedKeys } from "../infra/shell-env.js";
+import { resolveProviderEnvVarCandidates } from "../providers/registry.js";
 import {
   normalizeOptionalSecretInput,
   normalizeSecretInput,
@@ -246,6 +247,14 @@ export function resolveEnvApiKey(provider: string): EnvApiKeyResult | null {
     const source = applied.has(envVar) ? `shell env: ${envVar}` : `env: ${envVar}`;
     return { apiKey: value, source };
   };
+
+  const registryEnvVars = resolveProviderEnvVarCandidates(normalized);
+  for (const envVar of registryEnvVars) {
+    const resolved = pick(envVar);
+    if (resolved) {
+      return resolved;
+    }
+  }
 
   if (normalized === "github-copilot") {
     return pick("COPILOT_GITHUB_TOKEN") ?? pick("GH_TOKEN") ?? pick("GITHUB_TOKEN");

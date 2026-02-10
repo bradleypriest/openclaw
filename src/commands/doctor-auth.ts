@@ -15,18 +15,21 @@ import {
 } from "../agents/auth-profiles.js";
 import { updateAuthProfileStoreWithLock } from "../agents/auth-profiles/store.js";
 import { formatCliCommand } from "../cli/command-format.js";
+import { resolveProviderLegacyProfiles } from "../providers/registry.js";
 import { note } from "../terminal/note.js";
 
 export async function maybeRepairAnthropicOAuthProfileId(
   cfg: OpenClawConfig,
   prompter: DoctorPrompter,
 ): Promise<OpenClawConfig> {
+  const legacyDefaultProfileId =
+    resolveProviderLegacyProfiles("anthropic")?.defaultOAuthProfileId ?? "anthropic:default";
   const store = ensureAuthProfileStore();
   const repair = repairOAuthProfileIdMismatch({
     cfg,
     store,
     provider: "anthropic",
-    legacyProfileId: "anthropic:default",
+    legacyProfileId: legacyDefaultProfileId,
   });
   if (!repair.migrated || repair.changes.length === 0) {
     return cfg;
@@ -114,12 +117,20 @@ export async function maybeRemoveDeprecatedCliAuthProfiles(
   prompter: DoctorPrompter,
 ): Promise<OpenClawConfig> {
   const store = ensureAuthProfileStore(undefined, { allowKeychainPrompt: false });
+  const anthropicLegacy = resolveProviderLegacyProfiles("anthropic");
+  const openaiLegacy = resolveProviderLegacyProfiles("openai-codex");
+  const anthropicDeprecated = anthropicLegacy?.deprecatedProfileIds ?? [CLAUDE_CLI_PROFILE_ID];
+  const openaiDeprecated = openaiLegacy?.deprecatedProfileIds ?? [CODEX_CLI_PROFILE_ID];
   const deprecated = new Set<string>();
-  if (store.profiles[CLAUDE_CLI_PROFILE_ID] || cfg.auth?.profiles?.[CLAUDE_CLI_PROFILE_ID]) {
-    deprecated.add(CLAUDE_CLI_PROFILE_ID);
+  for (const id of anthropicDeprecated) {
+    if (store.profiles[id] || cfg.auth?.profiles?.[id]) {
+      deprecated.add(id);
+    }
   }
-  if (store.profiles[CODEX_CLI_PROFILE_ID] || cfg.auth?.profiles?.[CODEX_CLI_PROFILE_ID]) {
-    deprecated.add(CODEX_CLI_PROFILE_ID);
+  for (const id of openaiDeprecated) {
+    if (store.profiles[id] || cfg.auth?.profiles?.[id]) {
+      deprecated.add(id);
+    }
   }
 
   if (deprecated.size === 0) {
@@ -127,14 +138,20 @@ export async function maybeRemoveDeprecatedCliAuthProfiles(
   }
 
   const lines = ["Deprecated external CLI auth profiles detected (no longer supported):"];
-  if (deprecated.has(CLAUDE_CLI_PROFILE_ID)) {
+  for (const id of anthropicDeprecated) {
+    if (!deprecated.has(id)) {
+      continue;
+    }
     lines.push(
-      `- ${CLAUDE_CLI_PROFILE_ID} (Anthropic): use setup-token → ${formatCliCommand("openclaw models auth setup-token")}`,
+      `- ${id} (Anthropic): use setup-token → ${formatCliCommand("openclaw models auth setup-token")}`,
     );
   }
-  if (deprecated.has(CODEX_CLI_PROFILE_ID)) {
+  for (const id of openaiDeprecated) {
+    if (!deprecated.has(id)) {
+      continue;
+    }
     lines.push(
-      `- ${CODEX_CLI_PROFILE_ID} (OpenAI Codex): use OAuth → ${formatCliCommand(
+      `- ${id} (OpenAI Codex): use OAuth → ${formatCliCommand(
         "openclaw models auth login --provider openai-codex",
       )}`,
     );
@@ -207,12 +224,16 @@ type AuthIssue = {
 };
 
 function formatAuthIssueHint(issue: AuthIssue): string | null {
-  if (issue.provider === "anthropic" && issue.profileId === CLAUDE_CLI_PROFILE_ID) {
+  const anthropicLegacy = resolveProviderLegacyProfiles("anthropic");
+  const openaiLegacy = resolveProviderLegacyProfiles("openai-codex");
+  const anthropicDeprecated = anthropicLegacy?.deprecatedProfileIds ?? [CLAUDE_CLI_PROFILE_ID];
+  const openaiDeprecated = openaiLegacy?.deprecatedProfileIds ?? [CODEX_CLI_PROFILE_ID];
+  if (issue.provider === "anthropic" && anthropicDeprecated.includes(issue.profileId)) {
     return `Deprecated profile. Use ${formatCliCommand("openclaw models auth setup-token")} or ${formatCliCommand(
       "openclaw configure",
     )}.`;
   }
-  if (issue.provider === "openai-codex" && issue.profileId === CODEX_CLI_PROFILE_ID) {
+  if (issue.provider === "openai-codex" && openaiDeprecated.includes(issue.profileId)) {
     return `Deprecated profile. Use ${formatCliCommand(
       "openclaw models auth login --provider openai-codex",
     )} or ${formatCliCommand("openclaw configure")}.`;

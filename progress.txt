@@ -4,3 +4,6 @@ Provider Registry Ralph Loop
 - Added provider registry core with diagnostics and tests.
 - Added configPatch validation and tests to limit provider updates.
 - Wired plugin provider registration into provider registry.
+- Added derived views for auth choices, env vars, advisories, and legacy profiles.
+- Registered core OpenAI/Anthropic providers with registry metadata.
+- Added core provider coverage + alias diagnostics tests.

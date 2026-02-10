@@ -1,5 +1,6 @@
 import type { AuthProfileStore } from "../agents/auth-profiles.js";
 import type { AuthChoice } from "./onboard-types.js";
+import { listProviderAuthChoices } from "../providers/registry.js";
 
 export type AuthChoiceOption = {
   value: AuthChoice;
@@ -241,6 +242,19 @@ export function buildAuthChoiceOptions(params: {
     options.push({ value: "skip", label: "Skip for now" });
   }
 
+  const existing = new Set<AuthChoice>(options.map((opt) => opt.value));
+  for (const entry of listProviderAuthChoices()) {
+    if (entry.selectable === false) {
+      continue;
+    }
+    const value = entry.choice as AuthChoice;
+    if (existing.has(value)) {
+      continue;
+    }
+    options.push({ value, label: entry.label, hint: entry.hint });
+    existing.add(value);
+  }
+
   return options;
 }
 
@@ -255,12 +269,33 @@ export function buildAuthChoiceGroups(params: { store: AuthProfileStore; include
   const optionByValue = new Map<AuthChoice, AuthChoiceOption>(
     options.map((opt) => [opt.value, opt]),
   );
+  const registryByGroup = new Map<string, ReturnType<typeof listProviderAuthChoices>>();
+  for (const entry of listProviderAuthChoices()) {
+    const list = registryByGroup.get(entry.groupId) ?? [];
+    list.push(entry);
+    registryByGroup.set(entry.groupId, list);
+  }
 
   const groups = AUTH_CHOICE_GROUP_DEFS.map((group) => ({
     ...group,
-    options: group.choices
-      .map((choice) => optionByValue.get(choice))
-      .filter((opt): opt is AuthChoiceOption => Boolean(opt)),
+    options: (() => {
+      const merged = [
+        ...group.choices
+          .map((choice) => optionByValue.get(choice))
+          .filter((opt): opt is AuthChoiceOption => Boolean(opt)),
+        ...(registryByGroup.get(group.value) ?? [])
+          .filter((entry) => entry.selectable !== false)
+          .map((entry) => optionByValue.get(entry.choice as AuthChoice))
+          .filter((opt): opt is AuthChoiceOption => Boolean(opt)),
+      ];
+      const deduped = new Map<AuthChoice, AuthChoiceOption>();
+      for (const opt of merged) {
+        if (!deduped.has(opt.value)) {
+          deduped.set(opt.value, opt);
+        }
+      }
+      return [...deduped.values()];
+    })(),
   }));
 
   const skipOption = params.includeSkip
