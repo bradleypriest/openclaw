@@ -2,15 +2,12 @@ import type { ChannelId } from "../channels/plugins/types.js";
 import type { GatewayDaemonRuntime } from "./daemon-runtime.js";
 
 export type OnboardMode = "local" | "remote";
-export type AuthChoice =
+export type KnownAuthChoice =
   // Legacy alias for `setup-token` (kept for backwards CLI compatibility).
   | "oauth"
   | "setup-token"
   | "claude-cli"
-  | "token"
   | "chutes"
-  | "openai-codex"
-  | "openai-api-key"
   | "openrouter-api-key"
   | "ai-gateway-api-key"
   | "cloudflare-ai-gateway-api-key"
@@ -20,7 +17,6 @@ export type AuthChoice =
   | "synthetic-api-key"
   | "venice-api-key"
   | "codex-cli"
-  | "apiKey"
   | "gemini-api-key"
   | "google-antigravity"
   | "google-gemini-cli"
@@ -38,6 +34,9 @@ export type AuthChoice =
   | "xai-api-key"
   | "qianfan-api-key"
   | "skip";
+
+// Auth choices can be registry-defined; keep the type open for dynamic choices.
+export type AuthChoice = KnownAuthChoice | (string & {});
 export type GatewayAuthChoice = "token" | "password";
 export type ResetScope = "config" | "config+creds+sessions" | "full";
 export type GatewayBind = "loopback" | "lan" | "auto" | "custom" | "tailnet";
