@@ -25,7 +25,7 @@ import {
   handleControlUiHttpRequest,
   type ControlUiRootState,
 } from "./control-ui.js";
-import { applyHookMappings } from "./hooks-mapping.js";
+import { applyHookMappings, type HookMappingResolved } from "./hooks-mapping.js";
 import {
   extractHookToken,
   getHookAgentPolicyError,
@@ -36,19 +36,17 @@ import {
   normalizeAgentPayload,
   normalizeHookHeaders,
   normalizeWakePayload,
-  readJsonBody,
   resolveHookTargetAgentId,
   resolveHookChannel,
   resolveHookDeliver,
 } from "./hooks.js";
-import { applyHookMappings, type HookMappingResolved } from "./hooks-mapping.js";
-import { readRawBody } from "./webhook-auth-registry.js";
 import { sendUnauthorized } from "./http-common.js";
 import { getBearerToken, getHeader } from "./http-utils.js";
 import { resolveGatewayClientIp } from "./net.js";
 import { handleOpenAiHttpRequest } from "./openai-http.js";
 import { handleOpenResponsesHttpRequest } from "./openresponses-http.js";
 import { handleToolsInvokeHttpRequest } from "./tools-invoke-http.js";
+import { readRawBody } from "./webhook-auth-registry.js";
 
 type SubsystemLogger = ReturnType<typeof createSubsystemLogger>;
 
@@ -133,7 +131,9 @@ async function authorizeCanvasRequest(params: {
 
 function parseJsonPayload(rawBody: Buffer): Record<string, unknown> {
   const raw = rawBody.toString("utf-8").trim();
-  if (!raw) return {};
+  if (!raw) {
+    return {};
+  }
   try {
     const parsed = JSON.parse(raw) as unknown;
     return typeof parsed === "object" && parsed !== null ? (parsed as Record<string, unknown>) : {};
@@ -152,10 +152,14 @@ function findMatchingMapping(
   },
 ): HookMappingResolved | undefined {
   for (const mapping of mappings) {
-    if (mapping.matchPath && mapping.matchPath !== ctx.path) continue;
+    if (mapping.matchPath && mapping.matchPath !== ctx.path) {
+      continue;
+    }
     if (mapping.matchSource) {
       const source = typeof ctx.payload.source === "string" ? ctx.payload.source : undefined;
-      if (!source || source !== mapping.matchSource) continue;
+      if (!source || source !== mapping.matchSource) {
+        continue;
+      }
     }
     return mapping;
   }
